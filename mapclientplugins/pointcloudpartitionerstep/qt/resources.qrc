@@ -1,0 +1,6 @@
+
+<RCC>
+  <qresource prefix="pointcloudpartitionerstep">
+    <file>images/pointcloudicon.png</file>
+  </qresource>
+</RCC>
