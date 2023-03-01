@@ -6,7 +6,6 @@ Created on Jun 18, 2015
 from opencmiss.zinc.context import Context
 
 from mapclientplugins.pointcloudpartitionerstep.utils.zinc import createNodes, createElements, createFiniteElementField
-from mapclientplugins.pointcloudpartitionerstep.model.detection import DetectionModel
 
 
 class PointCloudPartitionerModel(object):
@@ -35,13 +34,7 @@ class PointCloudPartitionerModel(object):
         region = self._context.getDefaultRegion()
         self._coordinate_field = createFiniteElementField(region)
 
-        detection_region = self._context.getDefaultRegion().createChild('detection')
-        self._detection_model = DetectionModel(self, detection_region)
-
         self._selection_filter = self._createSelectionFilter()
-
-    def getDetectionModel(self):
-        return self._detection_model
 
     def getSelectionfilter(self):
         return self._selection_filter
@@ -54,9 +47,6 @@ class PointCloudPartitionerModel(object):
 
     def setLocation(self, location):
         self._location = location
-
-    def getPlaneDescription(self):
-        return self._detection_model.getPlaneDescription()
 
     def getContext(self):
         return self._context
@@ -83,10 +73,10 @@ class PointCloudPartitionerModel(object):
 
     def _createSelectionFilter(self):
         m = self._context.getScenefiltermodule()
-        r1 = m.createScenefilterRegion(self._detection_model.getRegion())
+        # r1 = m.createScenefilterRegion(self._detection_model.getRegion())
         # r2 = m.createScenefilterRegion(self._marker_model.getRegion())
         o = m.createScenefilterOperatorOr()
-        o.appendOperand(r1)
+        # o.appendOperand(r1)
         # o.appendOperand(r2)
         return o
 
