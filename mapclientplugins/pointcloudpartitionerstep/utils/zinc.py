@@ -169,38 +169,3 @@ def createCubeFiniteElement(fieldmodule, finite_element_field, node_coordinate_s
 
     mesh.defineElement(-1, element_template)
     fieldmodule.defineAllFaces()
-
-
-def _createPlaneEquationFormulation(fieldmodule, finite_element_field, plane_normal_field, point_on_plane_field):
-    """
-    Create an iso-scalar field that is based on the plane equation.
-    """
-    d = fieldmodule.createFieldDotProduct(plane_normal_field, point_on_plane_field)
-    iso_scalar_field = fieldmodule.createFieldDotProduct(finite_element_field, plane_normal_field) - d
-
-    return iso_scalar_field
-
-
-def createPlaneVisibilityField(fieldmodule, finite_element_field, plane_normal_field, point_on_plane_field):
-    """
-    Create an iso-scalar field that is based on the plane equation.
-    """
-    d = fieldmodule.createFieldSubtract(finite_element_field, point_on_plane_field)
-    p = fieldmodule.createFieldDotProduct(d, plane_normal_field)
-    t = fieldmodule.createFieldConstant(0.1)
-
-    v = fieldmodule.createFieldLessThan(p, t)
-
-    return v
-
-
-def createIsoScalarField(region, coordinate_field, plane):
-    fieldmodule = region.getFieldmodule()
-    fieldmodule.beginChange()
-    normal_field = plane.getNormalField()
-    rotation_point_field = plane.getRotationPointField()
-    iso_scalar_field = _createPlaneEquationFormulation(fieldmodule, coordinate_field, normal_field,
-                                                       rotation_point_field)
-    fieldmodule.endChange()
-
-    return iso_scalar_field
