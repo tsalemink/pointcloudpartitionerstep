@@ -7,7 +7,6 @@ from opencmiss.zinc.field import Field
 from opencmiss.zinc.glyph import Glyph
 
 from mapclientplugins.pointcloudpartitionerstep.scene.detection import DetectionScene
-from mapclientplugins.pointcloudpartitionerstep.scene.marker import MarkerScene
 
 
 class PointCloudPartitionerScene(object):
@@ -21,7 +20,6 @@ class PointCloudPartitionerScene(object):
         """
         self._model = model
         self._detection_scene = DetectionScene(model.getDetectionModel())
-        self._marker_scene = MarkerScene(model.getMarkerModel())
         self._setupVisualisation()
 
     def _setupVisualisation(self):

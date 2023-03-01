@@ -30,7 +30,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._scene = PointCloudPartitionerScene(model)
 
         self._ui.widgetZinc.setContext(model.getContext())
-        self._ui.widgetZinc.setModel(model.getMarkerModel())
         # self._ui.widgetZinc.setSelectionfilter(model.getSelectionfilter())
 
         self._makeConnections()

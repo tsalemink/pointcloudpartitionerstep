@@ -7,7 +7,6 @@ from opencmiss.zinc.context import Context
 
 from mapclientplugins.pointcloudpartitionerstep.utils.zinc import createNodes, createElements, createFiniteElementField
 from mapclientplugins.pointcloudpartitionerstep.model.detection import DetectionModel
-from mapclientplugins.pointcloudpartitionerstep.model.marker import MarkerModel
 
 
 class PointCloudPartitionerModel(object):
@@ -38,16 +37,11 @@ class PointCloudPartitionerModel(object):
 
         detection_region = self._context.getDefaultRegion().createChild('detection')
         self._detection_model = DetectionModel(self, detection_region)
-        marker_region = self._context.getDefaultRegion().createChild('marker')
-        self._marker_model = MarkerModel(self, marker_region)
 
         self._selection_filter = self._createSelectionFilter()
 
     def getDetectionModel(self):
         return self._detection_model
-
-    def getMarkerModel(self):
-        return self._marker_model
 
     def getSelectionfilter(self):
         return self._selection_filter
@@ -73,9 +67,6 @@ class PointCloudPartitionerModel(object):
     def getRegion(self):
         return self._context.getDefaultRegion()
 
-    def getLandmarks(self):
-        return self._marker_model.getLandmarks()
-
     def _createMesh(self, nodes, elements):
         """
         Create a mesh from data extracted from a VRML file.
@@ -93,10 +84,10 @@ class PointCloudPartitionerModel(object):
     def _createSelectionFilter(self):
         m = self._context.getScenefiltermodule()
         r1 = m.createScenefilterRegion(self._detection_model.getRegion())
-        r2 = m.createScenefilterRegion(self._marker_model.getRegion())
+        # r2 = m.createScenefilterRegion(self._marker_model.getRegion())
         o = m.createScenefilterOperatorOr()
         o.appendOperand(r1)
-        o.appendOperand(r2)
+        # o.appendOperand(r2)
         return o
 
     def defineStandardGlyphs(self):
