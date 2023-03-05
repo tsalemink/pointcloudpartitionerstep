@@ -4,6 +4,7 @@ Created on Jun 18, 2015
 @author: tsalemink
 """
 from opencmiss.zinc.context import Context
+from opencmiss.zincwidgets.definitions import SELECTION_GROUP_NAME
 
 from mapclientplugins.pointcloudpartitionerstep.utils.zinc import createNodes, createElements, createFiniteElementField
 
@@ -20,19 +21,19 @@ class PointCloudPartitionerModel(object):
         self._location = None
         self._file_location = None
         self._nodes = None
-        self._elements = None
-        self._coordinate_field = None
-        self._cache = None
+        self._selection_group = None
 
         self._context = Context("PointCloudPartitioner")
         self._region = self._context.getDefaultRegion()
         self._field_module = self._region.getFieldmodule()
+        self._cache = self._field_module.createFieldcache()
+        self._coordinate_field = createFiniteElementField(self._region)
+        self._selection_group_field = self._field_module.createFieldGroup()
+        # The SceneSelection handler uses this name to find the selection-FieldGroup.
+        self._selection_group_field.setName(SELECTION_GROUP_NAME)
 
         self.defineStandardMaterials()
         self.defineStandardGlyphs()
-
-        region = self._context.getDefaultRegion()
-        self._coordinate_field = createFiniteElementField(region)
 
         self._selection_filter = self._createSelectionFilter()
 
@@ -42,8 +43,6 @@ class PointCloudPartitionerModel(object):
     def load(self, file_location):
         self._region.readFile(file_location)
         self._nodes = self._field_module.findNodesetByName("nodes")
-        self._coordinate_field = self._field_module.findFieldByName("coordinates")
-        self._cache = self._field_module.createFieldcache()
 
     def setLocation(self, location):
         self._location = location
@@ -53,6 +52,9 @@ class PointCloudPartitionerModel(object):
 
     def getCoordinateField(self):
         return self._coordinate_field
+
+    def get_selection_field(self):
+        return self._selection_group_field
 
     def getRegion(self):
         return self._context.getDefaultRegion()
@@ -66,7 +68,7 @@ class PointCloudPartitionerModel(object):
         # First create all the required nodes
         createNodes(self._coordinate_field, self._nodes)
         # then define elements using a list of node indexes
-        createElements(self._coordinate_field, self._elements)
+        # createElements(self._coordinate_field, self._elements)
         # Define all faces also
         fieldmodule = self._coordinate_field.getFieldmodule()
         fieldmodule.defineAllFaces()

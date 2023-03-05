@@ -21,12 +21,14 @@ class PointCloudPartitionerScene(object):
 
     def _setupVisualisation(self):
         coordinate_field = self._model.getCoordinateField()
+        selection_field = self._model.get_selection_field()
         region = self._model.getRegion()
         scene = region.getScene()
         materialmodule = scene.getMaterialmodule()
         red = materialmodule.findMaterialByName('red')
-        self._node_graphics = self._createPointGraphics(scene, coordinate_field, red, None)  # self._model.getNodeGroupField())
-        # self._selection_graphics = self._createPointGraphics(scene, coordinate_field, yellow, None) # self._model.getSelectionGroupField())
+        blue = materialmodule.findMaterialByName('blue')
+        self._node_graphics = self._createPointGraphics(scene, coordinate_field, red, None)
+        self._selection_graphics = self._createPointGraphics(scene, coordinate_field, blue, selection_field)
 
     def _createPointGraphics(self, scene, finite_element_field, material, subgroup_field):
         scene.beginChange()
@@ -36,10 +38,17 @@ class PointCloudPartitionerScene(object):
         graphic.setCoordinateField(finite_element_field)
         graphic.setMaterial(material)
         graphic.setSelectedMaterial(material)
-        #         graphic.setSubgroupField(subgroup_field)
+        if subgroup_field:
+            graphic.setSubgroupField(subgroup_field)
         attributes = graphic.getGraphicspointattributes()
         attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_SPHERE)
-        attributes.setBaseSize([1.0])
+        # TODO: Update this to depend on point cloud size.
+        attributes.setBaseSize([0.02])
+        # Make selected Nodes slightly bigger for testing.
+        # This can be avoided if we can prevent the selected points from being drawn twice.
+        if subgroup_field:
+            attributes.setBaseSize([0.03])
+
         #         surface = scene.createGraphicsSurfaces()
         #         surface.setCoordinateField(finite_element_field)
         scene.endChange()

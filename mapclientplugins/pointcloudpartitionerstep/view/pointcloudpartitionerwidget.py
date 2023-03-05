@@ -3,9 +3,10 @@ Created on Jun 18, 2015
 
 @author: tsalemink
 """
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtGui, QtWidgets, QtCore
 
 from opencmiss.zincwidgets.handlers.scenemanipulation import SceneManipulation
+from opencmiss.zincwidgets.handlers.sceneselection import SceneSelection
 
 from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwidget import Ui_PointCloudPartitionerWidget
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
@@ -33,6 +34,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         self._ui.widgetZinc.set_context(model.getContext())
         self._ui.widgetZinc.register_handler(SceneManipulation())
+        self._ui.widgetZinc.register_handler(SceneSelection(QtCore.Qt.KeyboardModifier.ControlModifier))
+        self._ui.widgetZinc.setModel(model)
 
         # self._ui.widgetZinc.setSelectionfilter(model.getSelectionfilter())
 
