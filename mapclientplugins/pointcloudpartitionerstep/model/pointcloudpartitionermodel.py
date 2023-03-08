@@ -28,9 +28,6 @@ class PointCloudPartitionerModel(object):
         self._field_module = self._region.getFieldmodule()
         self._cache = self._field_module.createFieldcache()
         self._coordinate_field = createFiniteElementField(self._region)
-        self._selection_group_field = self._field_module.createFieldGroup()
-        # The SceneSelection handler uses this name to find the selection-FieldGroup.
-        self._selection_group_field.setName(SELECTION_GROUP_NAME)
 
         self.defineStandardMaterials()
         self.defineStandardGlyphs()
@@ -52,9 +49,6 @@ class PointCloudPartitionerModel(object):
 
     def getCoordinateField(self):
         return self._coordinate_field
-
-    def get_selection_field(self):
-        return self._selection_group_field
 
     def getRegion(self):
         return self._context.getDefaultRegion()

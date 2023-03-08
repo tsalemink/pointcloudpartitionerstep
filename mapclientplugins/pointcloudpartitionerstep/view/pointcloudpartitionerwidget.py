@@ -34,7 +34,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         self._ui.widgetZinc.set_context(model.getContext())
         self._ui.widgetZinc.register_handler(SceneManipulation())
-        self._ui.widgetZinc.register_handler(SceneSelection(QtCore.Qt.KeyboardModifier.ControlModifier))
+        self._ui.widgetZinc.register_handler(SceneSelection(QtCore.Qt.Key.Key_S))
         self._ui.widgetZinc.setModel(model)
 
         # self._ui.widgetZinc.setSelectionfilter(model.getSelectionfilter())
