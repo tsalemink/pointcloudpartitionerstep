@@ -20,12 +20,6 @@ class ZincPointCloudPartitionerWidget(BaseSceneviewerWidget):
         super(ZincPointCloudPartitionerWidget, self).__init__(parent)
         self._model = None
         self._active_button = QtCore.Qt.MouseButton.NoButton
-        self._plane_angle = None
-        self._active_plane = None
-        self._active_node = None
 
     def setModel(self, model):
         self._model = model
-
-    def deleteSelectedNodes(self):
-        self._model.removeSelected()
