@@ -24,27 +24,28 @@ class PointCloudPartitionerScene(object):
         coordinate_field = self._model.getCoordinateField()
         region = self._model.getRegion()
         scene = region.getScene()
-        materialmodule = scene.getMaterialmodule()
-        red = materialmodule.findMaterialByName('red')
-        blue = materialmodule.findMaterialByName('blue')
-        self._node_graphics = self._createPointGraphics(scene, coordinate_field, red, Graphics.SELECT_MODE_DRAW_SELECTED)
-        self._selection_graphics = self._createPointGraphics(scene, coordinate_field, blue, Graphics.SELECT_MODE_DRAW_UNSELECTED)
+        self._node_graphics = self.create_point_graphics(scene, coordinate_field, None, Graphics.SELECT_MODE_DRAW_SELECTED)
+        self._selection_graphics = self.create_point_graphics(scene, coordinate_field, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
 
-    def _createPointGraphics(self, scene, finite_element_field, material, mode):
+    def create_point_graphics(self, scene, finite_element_field, subgroup_field, mode=Graphics.SELECT_MODE_DRAW_UNSELECTED):
         scene.beginChange()
-        # Create a surface graphic and set it's coordinate field to the finite element coordinate field.
         graphic = scene.createGraphicsPoints()
         graphic.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
         graphic.setCoordinateField(finite_element_field)
-        # graphic.setMaterial(material)
-        # graphic.setSelectedMaterial(material)
         graphic.setSelectMode(mode)
+
+        if subgroup_field:
+            graphic.setSubgroupField(subgroup_field)
+
         attributes = graphic.getGraphicspointattributes()
         attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_SPHERE)
+
         # TODO: Update this to depend on point cloud size.
         attributes.setBaseSize([0.02])
-        #         surface = scene.createGraphicsSurfaces()
-        #         surface.setCoordinateField(finite_element_field)
+        # Temporarily increase size of grouped Nodes.
+        if subgroup_field:
+            attributes.setBaseSize([0.03])
+
         scene.endChange()
 
         return graphic

@@ -53,6 +53,9 @@ class PointCloudPartitionerModel(object):
     def getRegion(self):
         return self._context.getDefaultRegion()
 
+    def get_nodes(self):
+        return self._nodes
+
     def _createMesh(self, nodes, elements):
         """
         Create a mesh from data extracted from a VRML file.

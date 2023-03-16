@@ -7,6 +7,7 @@ from PySide6 import QtGui, QtWidgets, QtCore
 
 from opencmiss.zincwidgets.handlers.scenemanipulation import SceneManipulation
 from opencmiss.zincwidgets.handlers.sceneselection import SceneSelection
+from opencmiss.zincwidgets.definitions import SELECTION_GROUP_NAME
 
 from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwidget import Ui_PointCloudPartitionerWidget
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
@@ -106,6 +107,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         group = self._field_module.createFieldGroup()
         group.setName(name)
+        self._scene.create_point_graphics(self._model.getRegion().getScene(), self._model.getCoordinateField(), group)
+        # TODO: Set the spectrum information for the Group.
 
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.addWidget(check_box)
@@ -115,9 +118,26 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._label_dict[check_box] = label
         self._point_group_dict[check_box] = group
 
-    # TODO: Implement.
     def add_points_to_group(self):
-        pass
+        # Get the NodeSetGroup corresponding with the selected Nodes.
+        selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
+        selection_field_node_group = selection_field.getFieldNodeGroup(self._model.get_nodes())
+        selected_nodeset_group = selection_field_node_group.getNodesetGroup()
+
+        # Get the NodeSetGroup corresponding with the chosen FieldGroup.
+        checked_group = self._point_group_dict[self._button_group.checkedButton()]
+        field_node_group = checked_group.getFieldNodeGroup(self._model.get_nodes())
+        if not field_node_group.isValid():
+            field_node_group = checked_group.createFieldNodeGroup(self._model.get_nodes())
+        nodeset_group = field_node_group.getNodesetGroup()
+
+        # Add the selected Nodes to the chosen Group.
+        node_iter = selected_nodeset_group.createNodeiterator()
+        node = node_iter.next()
+        while node.isValid():
+            nodeset_group.addNode(node)
+            node = node_iter.next()
+        selection_field.clear()
 
     def registerDoneExecution(self, done_exectution):
         self._callback = done_exectution
