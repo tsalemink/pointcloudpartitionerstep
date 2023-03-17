@@ -3,8 +3,11 @@ Created on Jun 18, 2015
 
 @author: tsalemink
 """
+import colorsys
+
 from PySide6 import QtGui, QtWidgets, QtCore
 
+from opencmiss.zinc.material import Material
 from opencmiss.zincwidgets.handlers.scenemanipulation import SceneManipulation
 from opencmiss.zincwidgets.handlers.sceneselection import SceneSelection
 from opencmiss.zincwidgets.definitions import SELECTION_GROUP_NAME
@@ -39,6 +42,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         # TODO: Not sure if these would be best defined here or in the ZincWidget.
         self._label_dict = {}           # Key is CheckBox, value is Label.
         self._point_group_dict = {}     # Key is CheckBox, value is Group.
+        self._rgb_dict = {}             # Key is CheckBox, value is RGB-Value.
         self._button_group = QtWidgets.QButtonGroup()
 
         self._ui.widgetZinc.set_context(model.getContext())
@@ -100,15 +104,13 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         check_box = QtWidgets.QCheckBox()
         check_box.setSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
-        self._button_group.addButton(check_box)
         check_box.setChecked(True)
         check_box.pressed.connect(self.check_box_pressed)
         check_box.released.connect(self.check_box_released)
+        self._button_group.addButton(check_box)
 
         group = self._field_module.createFieldGroup()
         group.setName(name)
-        self._scene.create_point_graphics(self._model.getRegion().getScene(), self._model.getCoordinateField(), group)
-        # TODO: Set the spectrum information for the Group.
 
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.addWidget(check_box)
@@ -117,6 +119,27 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         self._label_dict[check_box] = label
         self._point_group_dict[check_box] = group
+        self._rgb_dict[check_box] = None
+        self._update_color_map()
+        self._scene.update_graphics_materials(self._rgb_dict)
+        material = self._rgb_dict[check_box]
+        self._scene.create_point_graphics(self._model.getRegion().getScene(), self._model.getCoordinateField(), group, material)
+
+    def _update_color_map(self):
+        def get_distinct_colors(n):
+            hue_partition = 1.0 / (n + 1)
+            return [list(colorsys.hsv_to_rgb(hue_partition * value, 1.0, 1.0)) for value in range(0, n)]
+
+        material_module = self._model.getRegion().getScene().getMaterialmodule()
+        colors = get_distinct_colors(len(self._rgb_dict) + 1)
+        colors.pop(0)
+        for i in range(len(colors)):
+            material = material_module.createMaterial()
+            material.setManaged(True)
+            material.setAttributeReal3(Material.ATTRIBUTE_AMBIENT, colors[i])
+            material.setAttributeReal3(Material.ATTRIBUTE_DIFFUSE, colors[i])
+            material.setAttributeReal3(Material.ATTRIBUTE_SPECULAR, [0.1, 0.1, 0.1])
+            self._rgb_dict[list(self._rgb_dict.keys())[i]] = material
 
     def add_points_to_group(self):
         # Get the NodeSetGroup corresponding with the selected Nodes.

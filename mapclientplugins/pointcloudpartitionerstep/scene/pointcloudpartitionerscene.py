@@ -18,16 +18,17 @@ class PointCloudPartitionerScene(object):
         Constructor
         """
         self._model = model
+        self._group_graphics = []
         self._setupVisualisation()
 
     def _setupVisualisation(self):
         coordinate_field = self._model.getCoordinateField()
         region = self._model.getRegion()
         scene = region.getScene()
-        self._node_graphics = self.create_point_graphics(scene, coordinate_field, None, Graphics.SELECT_MODE_DRAW_SELECTED)
-        self._selection_graphics = self.create_point_graphics(scene, coordinate_field, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
+        self._node_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
+        self._selection_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
 
-    def create_point_graphics(self, scene, finite_element_field, subgroup_field, mode=Graphics.SELECT_MODE_DRAW_UNSELECTED):
+    def create_point_graphics(self, scene, finite_element_field, subgroup_field, material, mode=Graphics.SELECT_MODE_DRAW_UNSELECTED):
         scene.beginChange()
         graphic = scene.createGraphicsPoints()
         graphic.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
@@ -36,6 +37,8 @@ class PointCloudPartitionerScene(object):
 
         if subgroup_field:
             graphic.setSubgroupField(subgroup_field)
+            graphic.setMaterial(material)
+            self._group_graphics.append(graphic)
 
         attributes = graphic.getGraphicspointattributes()
         attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_SPHERE)
@@ -49,3 +52,8 @@ class PointCloudPartitionerScene(object):
         scene.endChange()
 
         return graphic
+
+    def update_graphics_materials(self, materials):
+        for i in range(len(self._group_graphics)):
+            material = list(materials.values())[i]
+            self._group_graphics[i].setMaterial(material)

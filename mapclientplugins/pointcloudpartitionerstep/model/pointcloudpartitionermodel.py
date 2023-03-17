@@ -4,7 +4,6 @@ Created on Jun 18, 2015
 @author: tsalemink
 """
 from opencmiss.zinc.context import Context
-from opencmiss.zincwidgets.definitions import SELECTION_GROUP_NAME
 
 from mapclientplugins.pointcloudpartitionerstep.utils.zinc import createNodes, createElements, createFiniteElementField
 
@@ -52,6 +51,9 @@ class PointCloudPartitionerModel(object):
 
     def getRegion(self):
         return self._context.getDefaultRegion()
+
+    def get_cache(self):
+        return self._cache
 
     def get_nodes(self):
         return self._nodes
