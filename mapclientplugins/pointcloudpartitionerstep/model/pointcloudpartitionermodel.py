@@ -26,7 +26,7 @@ class PointCloudPartitionerModel(object):
         self._region = self._context.getDefaultRegion()
         self._field_module = self._region.getFieldmodule()
         self._cache = self._field_module.createFieldcache()
-        self._coordinate_field = createFiniteElementField(self._region)
+        self._coordinate_field = createFiniteElementField(self._region, 3)
 
         self.defineStandardMaterials()
         self.defineStandardGlyphs()

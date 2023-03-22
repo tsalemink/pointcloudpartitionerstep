@@ -12,6 +12,7 @@ class ZincPointCloudPartitionerWidget(BaseSceneviewerWidget):
     """
     classdocs
     """
+    handler_updated = QtCore.Signal()
 
     def __init__(self, parent=None):
         """
@@ -23,3 +24,14 @@ class ZincPointCloudPartitionerWidget(BaseSceneviewerWidget):
 
     def setModel(self, model):
         self._model = model
+
+    def get_active_handler(self):
+        return self._active_handler
+
+    def register_handler(self, handler):
+        super().register_handler(handler)
+        self.handler_updated.emit()
+
+    def _activate_handler(self, handler):
+        super()._activate_handler(handler)
+        self.handler_updated.emit()

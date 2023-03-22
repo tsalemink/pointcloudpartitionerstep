@@ -39,11 +39,12 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._scene = PointCloudPartitionerScene(model)
         self._field_module = self._model.getRegion().getFieldmodule()
 
-        # TODO: Not sure if these would be best defined here or in the ZincWidget.
         self._label_dict = {}           # Key is CheckBox, value is Label.
         self._point_group_dict = {}     # Key is CheckBox, value is Group.
         self._rgb_dict = {}             # Key is CheckBox, value is RGB-Value.
         self._button_group = QtWidgets.QButtonGroup()
+
+        self._makeConnections()
 
         self._ui.widgetZinc.set_context(model.getContext())
         self._ui.widgetZinc.register_handler(SceneManipulation())
@@ -52,14 +53,13 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         # self._ui.widgetZinc.setSelectionfilter(model.getSelectionfilter())
 
-        self._makeConnections()
-
     def _makeConnections(self):
         self._ui.pushButtonContinue.clicked.connect(self._continueExecution)
         self._ui.pushButtonViewAll.clicked.connect(self._viewAllButtonClicked)
         self._ui.widgetZinc.graphics_initialized.connect(self._zincWidgetReady)
         self._ui.pushButtonCreateGroup.clicked.connect(self.create_point_group)
         self._ui.pushButtonAddToGroup.clicked.connect(self.add_points_to_group)
+        self._ui.widgetZinc.handler_updated.connect(self.update_label_text)
 
     def getLandmarks(self):
         return self._model.getLandmarks()
@@ -161,6 +161,11 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             nodeset_group.addNode(node)
             node = node_iter.next()
         selection_field.clear()
+
+    def update_label_text(self):
+        handler_label_map = {SceneManipulation: "Mode: View", SceneSelection: "Mode: Selection"}
+        handler_label = handler_label_map[type(self._ui.widgetZinc.get_active_handler())]
+        self._scene.update_label_text(handler_label)
 
     def registerDoneExecution(self, done_exectution):
         self._callback = done_exectution

@@ -6,16 +6,16 @@ Created on May 21, 2015
 from opencmiss.zinc.element import Element, Elementbasis
 
 
-def createFiniteElementField(region):
+def createFiniteElementField(region, dimensions):
     """
-    Create a finite element field of three dimensions
-    called 'coordinates' and set the coordinate type true.
+    Create a finite element field called 'coordinates' and set the coordinate type true. Field dimensions are specified by the 'dimensions'
+    parameter.
     """
     fieldmodule = region.getFieldmodule()
     fieldmodule.beginChange()
 
     # Create a finite element field with 3 components to represent 3 dimensions
-    finite_element_field = fieldmodule.createFieldFiniteElement(3)
+    finite_element_field = fieldmodule.createFieldFiniteElement(dimensions)
 
     # Set the name of the field
     finite_element_field.setName('coordinates')
