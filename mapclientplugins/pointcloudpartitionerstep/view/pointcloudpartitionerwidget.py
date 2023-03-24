@@ -59,6 +59,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.widgetZinc.graphics_initialized.connect(self._zincWidgetReady)
         self._ui.pushButtonCreateGroup.clicked.connect(self.create_point_group)
         self._ui.pushButtonAddToGroup.clicked.connect(self.add_points_to_group)
+        self._ui.pushButtonRemoveFromGroup.clicked.connect(self.remove_points_from_group)
         self._ui.widgetZinc.handler_updated.connect(self.update_label_text)
 
     def getLandmarks(self):
@@ -142,17 +143,9 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             self._rgb_dict[list(self._rgb_dict.keys())[i]] = material
 
     def add_points_to_group(self):
-        # Get the NodeSetGroup corresponding with the selected Nodes.
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        selection_field_node_group = selection_field.getFieldNodeGroup(self._model.get_nodes())
-        selected_nodeset_group = selection_field_node_group.getNodesetGroup()
-
-        # Get the NodeSetGroup corresponding with the chosen FieldGroup.
-        checked_group = self._point_group_dict[self._button_group.checkedButton()]
-        field_node_group = checked_group.getFieldNodeGroup(self._model.get_nodes())
-        if not field_node_group.isValid():
-            field_node_group = checked_group.createFieldNodeGroup(self._model.get_nodes())
-        nodeset_group = field_node_group.getNodesetGroup()
+        selected_nodeset_group = self._get_selected_nodeset_group()
+        nodeset_group = self._get_checked_nodeset_group()
 
         # Add the selected Nodes to the chosen Group.
         node_iter = selected_nodeset_group.createNodeiterator()
@@ -161,6 +154,33 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             nodeset_group.addNode(node)
             node = node_iter.next()
         selection_field.clear()
+
+    def remove_points_from_group(self):
+        selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
+        selected_nodeset_group = self._get_selected_nodeset_group()
+        nodeset_group = self._get_checked_nodeset_group()
+
+        # Remove the selected Nodes from the chosen group.
+        node_iter = selected_nodeset_group.createNodeiterator()
+        node = node_iter.next()
+        while node.isValid():
+            nodeset_group.removeNode(node)
+            node = node_iter.next()
+        selection_field.clear()
+
+    def _get_selected_nodeset_group(self):
+        # Get the NodeSetGroup corresponding with the selected Nodes.
+        selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
+        selection_field_node_group = selection_field.getFieldNodeGroup(self._model.get_nodes())
+        return selection_field_node_group.getNodesetGroup()
+
+    def _get_checked_nodeset_group(self):
+        # Get the NodeSetGroup corresponding with the chosen FieldGroup.
+        checked_group = self._point_group_dict[self._button_group.checkedButton()]
+        field_node_group = checked_group.getFieldNodeGroup(self._model.get_nodes())
+        if not field_node_group.isValid():
+            field_node_group = checked_group.createFieldNodeGroup(self._model.get_nodes())
+        return field_node_group.getNodesetGroup()
 
     def update_label_text(self):
         handler_label_map = {SceneManipulation: "Mode: View", SceneSelection: "Mode: Selection"}

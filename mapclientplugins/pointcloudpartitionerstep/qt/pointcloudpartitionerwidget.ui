@@ -62,6 +62,13 @@
            </property>
           </widget>
          </item>
+         <item>
+          <widget class="QPushButton" name="pushButtonRemoveFromGroup">
+           <property name="text">
+            <string>Remove Selected Points from Group</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </widget>
       </item>

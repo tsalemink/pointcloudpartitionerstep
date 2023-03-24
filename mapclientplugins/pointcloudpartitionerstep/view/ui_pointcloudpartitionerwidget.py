@@ -59,6 +59,11 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.verticalLayout_4.addWidget(self.pushButtonAddToGroup)
 
+        self.pushButtonRemoveFromGroup = QPushButton(self.groupBox_2)
+        self.pushButtonRemoveFromGroup.setObjectName(u"pushButtonRemoveFromGroup")
+
+        self.verticalLayout_4.addWidget(self.pushButtonRemoveFromGroup)
+
 
         self.verticalLayout_2.addWidget(self.groupBox_2)
 
@@ -111,6 +116,7 @@ class Ui_PointCloudPartitionerWidget(object):
         self.groupBox_2.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Group Points", None))
         self.pushButtonCreateGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Create Group", None))
         self.pushButtonAddToGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Add Selected Points to Group", None))
+        self.pushButtonRemoveFromGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Selected Points from Group", None))
         self.groupBox_3.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"View", None))
         self.pushButtonViewAll.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"View All", None))
         self.groupBox_4.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"File", None))
