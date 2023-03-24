@@ -3,6 +3,8 @@ Created on Jun 18, 2015
 
 @author: tsalemink
 """
+import os
+
 from opencmiss.zinc.context import Context
 
 from mapclientplugins.pointcloudpartitionerstep.utils.zinc import createNodes, createElements, createFiniteElementField
@@ -19,6 +21,7 @@ class PointCloudPartitionerModel(object):
         """
         self._location = None
         self._file_location = None
+        self._output_filename = None
         self._nodes = None
         self._selection_group = None
 
@@ -37,8 +40,21 @@ class PointCloudPartitionerModel(object):
         return self._selection_filter
 
     def load(self, file_location):
+        self._file_location = file_location
         self._region.readFile(file_location)
         self._nodes = self._field_module.findNodesetByName("nodes")
+
+    def write_model(self):
+        temp_location = os.path.join(os.path.split(self._location)[0], "_temp")
+        if not os.path.exists(temp_location):
+            os.makedirs(temp_location)
+
+        filename = os.path.basename(self._file_location).split('.')[0] + '-grouped.exf'
+        self._output_filename = os.path.join(temp_location, filename)
+        self._region.writeFile(self._output_filename)
+
+    def get_output_filename(self):
+        return self._output_filename
 
     def setLocation(self, location):
         self._location = location

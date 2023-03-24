@@ -28,12 +28,17 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         self.addPort(('http://physiomeproject.org/workflow/1.0/rdf-schema#port',
                       'http://physiomeproject.org/workflow/1.0/rdf-schema#uses',
                       'http://physiomeproject.org/workflow/1.0/rdf-schema#file_location'))
+        self.addPort(('http://physiomeproject.org/workflow/1.0/rdf-schema#port',
+                      'http://physiomeproject.org/workflow/1.0/rdf-schema#provides',
+                      'http://physiomeproject.org/workflow/1.0/rdf-schema#file_location'))
         self._config = {
             'identifier': ''
         }
 
         self._view = None
+        self._model = None
         self._source_points = None
+        self._output_points = None
 
     def execute(self):
         """
@@ -42,13 +47,17 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         may be connected up to a button in a widget for example.
         """
         if self._view is None:
-            model = PointCloudPartitionerModel()
-            model.setLocation(os.path.join(self._location, self._config['identifier']))
-            self._view = PointCloudPartitionerWidget(model)
-            self._view.registerDoneExecution(self._doneExecution)
+            self._model = PointCloudPartitionerModel()
+            self._model.setLocation(os.path.join(self._location, self._config['identifier']))
+            self._view = PointCloudPartitionerWidget(self._model)
+            self._view.registerDoneExecution(self._myDoneExecution)
 
         self._view.load(self._source_points)
         self._setCurrentWidget(self._view)
+
+    def _myDoneExecution(self):
+        self._output_points = self._model.get_output_filename()
+        self._doneExecution()
 
     def setPortData(self, index, data_in):
         """
@@ -64,7 +73,7 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         The index is the index of the port in the port list.  If there is only one
         provides port for this step then the index can be ignored.
         """
-        pass
+        return self._output_points
 
     def configure(self):
         """

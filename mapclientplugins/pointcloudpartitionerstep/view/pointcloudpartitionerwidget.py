@@ -177,7 +177,19 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.widgetZinc.viewAll()
 
     def _continueExecution(self):
+        self._remove_ui_region()
+        self._clear_selection_group()
+        self._model.write_model()
         self._callback()
+
+    def _remove_ui_region(self):
+        self._model.getRegion().removeChild(self._model.getRegion().findChildByName('normalised'))
+
+    # TODO: This is failing to remove the group.
+    def _clear_selection_group(self):
+        selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
+        selection_field.clear()
+        selection_field.setManaged(False)
 
 
 class EditableLabel(QtWidgets.QStackedWidget):
