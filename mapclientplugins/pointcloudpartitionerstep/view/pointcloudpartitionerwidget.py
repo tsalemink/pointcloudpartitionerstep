@@ -39,7 +39,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._scene = PointCloudPartitionerScene(model)
         self._field_module = self._model.getRegion().getFieldmodule()
 
-        self._label_dict = {}           # Key is CheckBox, value is Label.
+        self._check_box_dict = {}       # Key is Label, value is CheckBox.
         self._point_group_dict = {}     # Key is CheckBox, value is Group.
         self._rgb_dict = {}             # Key is CheckBox, value is RGB-Value.
         self._button_group = QtWidgets.QButtonGroup()
@@ -70,13 +70,13 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def create_unique_label(self):
         label = "Group_"
-        i = len(self._label_dict) + 1
+        i = len(self._check_box_dict) + 1
         while not self.label_is_unique(label + str(i)):
             i += 1
         return label + str(i)
 
     def label_is_unique(self, label):
-        for value in self._label_dict.values():
+        for value in self._check_box_dict.keys():
             if value.get_label().text() == label:
                 return False
         return True
@@ -118,7 +118,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         horizontal_layout.addWidget(label)
         self._ui.verticalLayout_5.addLayout(horizontal_layout)
 
-        self._label_dict[check_box] = label
+        self._check_box_dict[label] = check_box
         self._point_group_dict[check_box] = group
         self._rgb_dict[check_box] = None
         self._update_color_map()
@@ -146,6 +146,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
         selected_nodeset_group = self._get_selected_nodeset_group()
         nodeset_group = self._get_checked_nodeset_group()
+        if not nodeset_group:
+            return
 
         # Add the selected Nodes to the chosen Group.
         node_iter = selected_nodeset_group.createNodeiterator()
@@ -159,6 +161,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
         selected_nodeset_group = self._get_selected_nodeset_group()
         nodeset_group = self._get_checked_nodeset_group()
+        if not nodeset_group:
+            return
 
         # Remove the selected Nodes from the chosen group.
         node_iter = selected_nodeset_group.createNodeiterator()
@@ -175,8 +179,21 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         return selection_field_node_group.getNodesetGroup()
 
     def _get_checked_nodeset_group(self):
+        checked_button = self._button_group.checkedButton()
+
+        if len(self._point_group_dict) == 0:
+            QtWidgets.QMessageBox.information(self, 'No Point Group Created', 'No point group created. Please create a point group first '
+                                              'before attempting to add points.', QtWidgets.QMessageBox.StandardButton.Ok)
+            return None
+        elif not checked_button:
+            dlg = GroupSelectionDialog(self._check_box_dict.keys())
+            if dlg.exec_():
+                checked_button = self._check_box_dict[dlg.get_label()]
+            else:
+                return None
+
         # Get the NodeSetGroup corresponding with the chosen FieldGroup.
-        checked_group = self._point_group_dict[self._button_group.checkedButton()]
+        checked_group = self._point_group_dict[checked_button]
         field_node_group = checked_group.getFieldNodeGroup(self._model.get_nodes())
         if not field_node_group.isValid():
             field_node_group = checked_group.createFieldNodeGroup(self._model.get_nodes())
@@ -244,6 +261,9 @@ class EditableLabel(QtWidgets.QStackedWidget):
         self.setCurrentWidget(self._line_edit)
         self._line_edit.setFocus()
 
+    def get_text(self):
+        return self._label.text()
+
     def update_text(self):
         self._label.setText(self._line_edit.text())
         self.setCurrentIndex(0)
@@ -260,3 +280,42 @@ class CustomLineEdit(QtWidgets.QLineEdit):
     def focusOutEvent(self, event):
         super().focusOutEvent(event)
         self.editingFinished.emit()
+
+
+class GroupSelectionDialog(QtWidgets.QDialog):
+    def __init__(self, labels):
+        super().__init__()
+
+        self.setMinimumSize(300, 200)
+        self.setWindowTitle("Select Point Group")
+
+        buttons = QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        self.button_box = QtWidgets.QDialogButtonBox(buttons)
+        self.button_box.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(False)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+
+        self.layout = QtWidgets.QVBoxLayout()
+        self.button_group = QtWidgets.QButtonGroup()
+        self.button_group.buttonClicked.connect(self._enable_button)
+
+        message = QtWidgets.QLabel("Choose the group that you wish to add the selected points to:")
+        self.layout.addWidget(message)
+
+        self.label_dict = {}
+        for label in labels:
+            text = label.get_text()
+            check_box = QtWidgets.QCheckBox(text)
+            self.button_group.addButton(check_box)
+            self.layout.addWidget(check_box)
+            self.label_dict[text] = label
+
+        self.layout.addStretch()
+        self.layout.addWidget(self.button_box)
+        self.setLayout(self.layout)
+
+    def _enable_button(self):
+        self.button_box.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
+
+    def get_label(self):
+        return self.label_dict[self.button_group.checkedButton().text()]
