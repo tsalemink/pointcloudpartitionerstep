@@ -22,7 +22,7 @@ class ZincPointCloudPartitionerWidget(BaseSceneviewerWidget):
         self._model = None
         self._active_button = QtCore.Qt.MouseButton.NoButton
 
-    def setModel(self, model):
+    def set_model(self, model):
         self._model = model
 
     def get_active_handler(self):

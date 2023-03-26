@@ -5,7 +5,7 @@ Created on Jun 18, 2015
 """
 import colorsys
 
-from PySide6 import QtGui, QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore
 
 from opencmiss.zinc.material import Material
 from opencmiss.zincwidgets.handlers.scenemanipulation import SceneManipulation
@@ -37,33 +37,30 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         self._model = model
         self._scene = PointCloudPartitionerScene(model)
-        self._field_module = self._model.getRegion().getFieldmodule()
+        self._field_module = self._model.get_region().getFieldmodule()
 
         self._check_box_dict = {}       # Key is Label, value is CheckBox.
         self._point_group_dict = {}     # Key is CheckBox, value is Group.
         self._rgb_dict = {}             # Key is CheckBox, value is RGB-Value.
         self._button_group = QtWidgets.QButtonGroup()
 
-        self._makeConnections()
+        self._make_connections()
 
-        self._ui.widgetZinc.set_context(model.getContext())
+        self._ui.widgetZinc.set_context(model.get_context())
         self._ui.widgetZinc.register_handler(SceneManipulation())
         self._ui.widgetZinc.register_handler(SceneSelection(QtCore.Qt.Key.Key_S))
-        self._ui.widgetZinc.setModel(model)
+        self._ui.widgetZinc.set_model(model)
 
-        # self._ui.widgetZinc.setSelectionfilter(model.getSelectionfilter())
+        # self._ui.widgetZinc.setSelectionfilter(model.get_selection_filter())
 
-    def _makeConnections(self):
-        self._ui.pushButtonContinue.clicked.connect(self._continueExecution)
-        self._ui.pushButtonViewAll.clicked.connect(self._viewAllButtonClicked)
-        self._ui.widgetZinc.graphics_initialized.connect(self._zincWidgetReady)
+    def _make_connections(self):
+        self._ui.pushButtonContinue.clicked.connect(self._continue_execution)
+        self._ui.pushButtonViewAll.clicked.connect(self._view_all_button_clicked)
+        self._ui.widgetZinc.graphics_initialized.connect(self._zinc_widget_ready)
         self._ui.pushButtonCreateGroup.clicked.connect(self.create_point_group)
         self._ui.pushButtonAddToGroup.clicked.connect(self.add_points_to_group)
         self._ui.pushButtonRemoveFromGroup.clicked.connect(self.remove_points_from_group)
         self._ui.widgetZinc.handler_updated.connect(self.update_label_text)
-
-    def getLandmarks(self):
-        return self._model.getLandmarks()
 
     def load(self, file_location):
         self._model.load(file_location)
@@ -124,14 +121,14 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._update_color_map()
         self._scene.update_graphics_materials(self._rgb_dict)
         material = self._rgb_dict[check_box]
-        self._scene.create_point_graphics(self._model.getRegion().getScene(), self._model.getCoordinateField(), group, material)
+        self._scene.create_point_graphics(self._model.get_region().getScene(), self._model.get_coordinate_field(), group, material)
 
     def _update_color_map(self):
         def get_distinct_colors(n):
             hue_partition = 1.0 / (n + 1)
             return [list(colorsys.hsv_to_rgb(hue_partition * value, 1.0, 1.0)) for value in range(0, n)]
 
-        material_module = self._model.getRegion().getScene().getMaterialmodule()
+        material_module = self._model.get_region().getScene().getMaterialmodule()
         colors = get_distinct_colors(len(self._rgb_dict) + 1)
         colors.pop(0)
         for i in range(len(colors)):
@@ -204,25 +201,24 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         handler_label = handler_label_map[type(self._ui.widgetZinc.get_active_handler())]
         self._scene.update_label_text(handler_label)
 
-    def registerDoneExecution(self, done_exectution):
+    def register_done_execution(self, done_exectution):
         self._callback = done_exectution
 
-    def _zincWidgetReady(self):
-        self._ui.widgetZinc.set_selectionfilter(self._model.getSelectionfilter())
+    def _zinc_widget_ready(self):
+        self._ui.widgetZinc.set_selectionfilter(self._model.get_selection_filter())
 
-    def _viewAllButtonClicked(self):
+    def _view_all_button_clicked(self):
         self._ui.widgetZinc.viewAll()
 
-    def _continueExecution(self):
+    def _continue_execution(self):
         self._remove_ui_region()
         self._clear_selection_group()
         self._model.write_model()
         self._callback()
 
     def _remove_ui_region(self):
-        self._model.getRegion().removeChild(self._model.getRegion().findChildByName('normalised'))
+        self._model.get_region().removeChild(self._model.get_region().findChildByName('normalised'))
 
-    # TODO: This is failing to remove the group.
     def _clear_selection_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
         selection_field.clear()

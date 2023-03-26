@@ -6,7 +6,7 @@ Created on May 21, 2015
 from opencmiss.zinc.element import Element, Elementbasis
 
 
-def createFiniteElementField(region, dimensions):
+def create_finite_element_field(region, dimensions):
     """
     Create a finite element field called 'coordinates' and set the coordinate type true. Field dimensions are specified by the 'dimensions'
     parameter.
@@ -28,7 +28,7 @@ def createFiniteElementField(region, dimensions):
     return finite_element_field
 
 
-def createNodes(finite_element_field, node_coordinate_set):
+def create_nodes(finite_element_field, node_coordinate_set):
     """
     Create a node for every coordinate in the node_coordinate_set.
     """
@@ -48,7 +48,7 @@ def createNodes(finite_element_field, node_coordinate_set):
         finite_element_field.assignReal(field_cache, node_coordinate)
 
 
-def createElements(finite_element_field, element_node_set):
+def create_elements(finite_element_field, element_node_set):
     """
     Create an element for every element_node_set
     """
@@ -79,7 +79,7 @@ def createElements(finite_element_field, element_node_set):
 #     fieldmodule.defineAllFaces()
 
 
-def createSquare2DFiniteElement(fieldmodule, finite_element_field, node_coordinate_set):
+def create_square_2d_finite_element(fieldmodule, finite_element_field, node_coordinate_set):
     """
     Create a single finite element using the supplied
     finite element field and node coordinate set.
@@ -125,7 +125,7 @@ def createSquare2DFiniteElement(fieldmodule, finite_element_field, node_coordina
     fieldmodule.defineAllFaces()
 
 
-def createCubeFiniteElement(fieldmodule, finite_element_field, node_coordinate_set):
+def create_cube_finite_element(fieldmodule, finite_element_field, node_coordinate_set):
     """
     Create a single finite element using the supplied
     finite element field and node coordinate set.

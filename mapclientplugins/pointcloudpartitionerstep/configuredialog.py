@@ -27,9 +27,9 @@ class ConfigureDialog(QtWidgets.QDialog):
         # We will use this method to decide whether the identifier is unique.
         self.identifierOccursCount = None
 
-        self._makeConnections()
+        self._make_connections()
 
-    def _makeConnections(self):
+    def _make_connections(self):
         self._ui.lineEdit0.textChanged.connect(self.validate)
 
     def accept(self):
@@ -65,7 +65,7 @@ class ConfigureDialog(QtWidgets.QDialog):
 
         return valid
 
-    def getConfig(self):
+    def get_config(self):
         """
         Get the current value of the configuration from the dialog.  Also
         set the _previousIdentifier value so that we can check uniqueness of the
@@ -77,7 +77,7 @@ class ConfigureDialog(QtWidgets.QDialog):
         }
         return config
 
-    def setConfig(self, config):
+    def set_config(self, config):
         """
         Set the current value of the configuration for the dialog.  Also
         set the _previousIdentifier value so that we can check uniqueness of the

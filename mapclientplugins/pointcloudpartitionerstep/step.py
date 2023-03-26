@@ -48,14 +48,14 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         """
         if self._view is None:
             self._model = PointCloudPartitionerModel()
-            self._model.setLocation(os.path.join(self._location, self._config['identifier']))
+            self._model.set_location(os.path.join(self._location, self._config['identifier']))
             self._view = PointCloudPartitionerWidget(self._model)
-            self._view.registerDoneExecution(self._myDoneExecution)
+            self._view.register_done_execution(self._my_done_execution)
 
         self._view.load(self._source_points)
         self._setCurrentWidget(self._view)
 
-    def _myDoneExecution(self):
+    def _my_done_execution(self):
         self._output_points = self._model.get_output_filename()
         self._doneExecution()
 
@@ -85,12 +85,12 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         """
         dlg = ConfigureDialog(self._main_window)
         dlg.identifierOccursCount = self._identifierOccursCount
-        dlg.setConfig(self._config)
+        dlg.set_config(self._config)
         dlg.validate()
         dlg.setModal(True)
 
         if dlg.exec_():
-            self._config = dlg.getConfig()
+            self._config = dlg.get_config()
 
         self._configured = dlg.validate()
         self._configuredObserver()
@@ -123,5 +123,5 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
 
         d = ConfigureDialog()
         d.identifierOccursCount = self._identifierOccursCount
-        d.setConfig(self._config)
+        d.set_config(self._config)
         self._configured = d.validate()

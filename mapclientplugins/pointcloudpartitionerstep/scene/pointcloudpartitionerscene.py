@@ -8,7 +8,7 @@ from opencmiss.zinc.glyph import Glyph
 from opencmiss.zinc.graphics import Graphics
 from opencmiss.zinc.scenecoordinatesystem import SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT
 
-from mapclientplugins.pointcloudpartitionerstep.utils.zinc import createFiniteElementField, createNodes
+from mapclientplugins.pointcloudpartitionerstep.utils.zinc import create_finite_element_field, create_nodes
 
 
 class PointCloudPartitionerScene(object):
@@ -23,20 +23,20 @@ class PointCloudPartitionerScene(object):
         self._model = model
         self._group_graphics = []
         self._label_graphics = None
-        self._setupVisualisation()
+        self._setup_visualisation()
 
-    def _setupVisualisation(self):
-        region = self._model.getRegion()
+    def _setup_visualisation(self):
+        region = self._model.get_region()
         scene = region.getScene()
 
-        coordinate_field = self._model.getCoordinateField()
+        coordinate_field = self._model.get_coordinate_field()
         self._node_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
         self._selection_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
 
         normalised_region = region.createChild('normalised')
         normalised_scene = normalised_region.getScene()
-        normalised_coordinate_field = createFiniteElementField(normalised_region, 2)
-        createNodes(normalised_coordinate_field, [[10.0, 10.0]])
+        normalised_coordinate_field = create_finite_element_field(normalised_region, 2)
+        create_nodes(normalised_coordinate_field, [[10.0, 10.0]])
         self.create_text_graphics(normalised_scene, normalised_coordinate_field)
 
     def create_point_graphics(self, scene, finite_element_field, subgroup_field, material, mode=Graphics.SELECT_MODE_DRAW_UNSELECTED):

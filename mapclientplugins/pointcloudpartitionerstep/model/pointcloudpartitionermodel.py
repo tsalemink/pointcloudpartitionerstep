@@ -7,7 +7,7 @@ import os
 
 from opencmiss.zinc.context import Context
 
-from mapclientplugins.pointcloudpartitionerstep.utils.zinc import createNodes, createElements, createFiniteElementField
+from mapclientplugins.pointcloudpartitionerstep.utils.zinc import create_nodes, create_elements, create_finite_element_field
 
 
 class PointCloudPartitionerModel(object):
@@ -29,14 +29,14 @@ class PointCloudPartitionerModel(object):
         self._region = self._context.getDefaultRegion()
         self._field_module = self._region.getFieldmodule()
         self._cache = self._field_module.createFieldcache()
-        self._coordinate_field = createFiniteElementField(self._region, 3)
+        self._coordinate_field = create_finite_element_field(self._region, 3)
 
-        self.defineStandardMaterials()
-        self.defineStandardGlyphs()
+        self.define_standard_materials()
+        self.define_standard_glyphs()
 
-        self._selection_filter = self._createSelectionFilter()
+        self._selection_filter = self._create_selection_filter()
 
-    def getSelectionfilter(self):
+    def get_selection_filter(self):
         return self._selection_filter
 
     def load(self, file_location):
@@ -56,16 +56,16 @@ class PointCloudPartitionerModel(object):
     def get_output_filename(self):
         return self._output_filename
 
-    def setLocation(self, location):
+    def set_location(self, location):
         self._location = location
 
-    def getContext(self):
+    def get_context(self):
         return self._context
 
-    def getCoordinateField(self):
+    def get_coordinate_field(self):
         return self._coordinate_field
 
-    def getRegion(self):
+    def get_region(self):
         return self._context.getDefaultRegion()
 
     def get_cache(self):
@@ -74,37 +74,37 @@ class PointCloudPartitionerModel(object):
     def get_nodes(self):
         return self._nodes
 
-    def _createMesh(self, nodes, elements):
+    def _create_mesh(self, nodes, elements):
         """
         Create a mesh from data extracted from a VRML file.
         The nodes are given as a list of coordinates and the elements
         are given as a list of indexes into the node list..
         """
         # First create all the required nodes
-        createNodes(self._coordinate_field, self._nodes)
+        create_nodes(self._coordinate_field, nodes)
         # then define elements using a list of node indexes
-        # createElements(self._coordinate_field, self._elements)
+        create_elements(self._coordinate_field, elements)
         # Define all faces also
         fieldmodule = self._coordinate_field.getFieldmodule()
         fieldmodule.defineAllFaces()
 
-    def _createSelectionFilter(self):
+    def _create_selection_filter(self):
         m = self._context.getScenefiltermodule()
-        # r1 = m.createScenefilterRegion(self._detection_model.getRegion())
-        # r2 = m.createScenefilterRegion(self._marker_model.getRegion())
+        # r1 = m.createScenefilterRegion(self._detection_model.get_region())
+        # r2 = m.createScenefilterRegion(self._marker_model.get_region())
         o = m.createScenefilterOperatorOr()
         # o.appendOperand(r1)
         # o.appendOperand(r2)
         return o
 
-    def defineStandardGlyphs(self):
+    def define_standard_glyphs(self):
         """
         Helper method to define the standard glyphs
         """
         glyph_module = self._context.getGlyphmodule()
         glyph_module.defineStandardGlyphs()
 
-    def defineStandardMaterials(self):
+    def define_standard_materials(self):
         """
         Helper method to define the standard materials.
         """
@@ -112,7 +112,7 @@ class PointCloudPartitionerModel(object):
         material_module.defineStandardMaterials()
 
 
-def _makeElementsOneBased(elements_list):
+def _make_elements_one_based(elements_list):
     """
     Take a list of a list of element node indexes and increment the
     node index by one.
@@ -124,7 +124,7 @@ def _makeElementsOneBased(elements_list):
     return updated_elements
 
 
-def _convertToElementList(elements_list):
+def _convert_to_element_list(elements_list):
     """
     Take a list of element node indexes deliminated by -1 and convert
     it into a list element node indexes list.
@@ -142,7 +142,7 @@ def _convertToElementList(elements_list):
     return elements
 
 
-def _calculateExtents(values):
+def _calculate_extents(values):
     """
     Calculate the maximum and minimum for each coordinate x, y, and z
     Return the max's and min's as:
