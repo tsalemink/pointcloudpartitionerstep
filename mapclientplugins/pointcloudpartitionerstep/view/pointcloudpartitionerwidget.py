@@ -183,7 +183,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                                               'before attempting to add points.', QtWidgets.QMessageBox.StandardButton.Ok)
             return None
         elif not checked_button:
-            dlg = GroupSelectionDialog(self._check_box_dict.keys())
+            dlg = GroupSelectionDialog(self, self._check_box_dict.keys())
             if dlg.exec_():
                 checked_button = self._check_box_dict[dlg.get_label()]
             else:
@@ -279,8 +279,8 @@ class CustomLineEdit(QtWidgets.QLineEdit):
 
 
 class GroupSelectionDialog(QtWidgets.QDialog):
-    def __init__(self, labels):
-        super().__init__()
+    def __init__(self, parent, labels):
+        super().__init__(parent)
 
         self.setMinimumSize(300, 200)
         self.setWindowTitle("Select Point Group")
