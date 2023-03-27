@@ -15,7 +15,8 @@ from opencmiss.zincwidgets.definitions import SELECTION_GROUP_NAME
 from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwidget import Ui_PointCloudPartitionerWidget
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
 
-ANGLE_RANGE = 50
+INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
+DEFAULT_STYLE_SHEET = ''
 
 
 class PointCloudPartitionerWidget(QtWidgets.QWidget):
@@ -39,7 +40,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._scene = PointCloudPartitionerScene(model)
         self._field_module = self._model.get_region().getFieldmodule()
 
-        self._check_box_dict = {}       # Key is Label, value is CheckBox.
+        self._check_box_dict = {}       # Key is LineEdit, value is CheckBox.
         self._point_group_dict = {}     # Key is CheckBox, value is Group.
         self._rgb_dict = {}             # Key is CheckBox, value is RGB-Value.
         self._button_group = QtWidgets.QButtonGroup()
@@ -65,25 +66,28 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def load(self, file_location):
         self._model.load(file_location)
 
-    def create_unique_label(self):
-        label = "Group_"
+    def create_unique_line_edit(self):
         i = len(self._check_box_dict) + 1
-        while not self.label_is_unique(label + str(i)):
+        line_edit = QtWidgets.QLineEdit("Group_" + str(i))
+        while not self.line_edit_is_unique(line_edit):
             i += 1
-        return label + str(i)
+            line_edit.setText("Group_" + str(i))
+        return line_edit
 
-    def label_is_unique(self, label):
+    def line_edit_is_unique(self, line_edit):
         for value in self._check_box_dict.keys():
-            if value.get_label().text() == label:
+            if value.text() == line_edit.text() and value is not line_edit:
                 return False
         return True
 
-    def validate_label(self):
-        label = self.sender()
-        if label.get_label().text() == label.get_line_edit().text() or self.label_is_unique(label.get_line_edit().text()):
-            label.update_text()
+    def validate_line_edit(self):
+        line_edit = self.sender()
+        if self.line_edit_is_unique(line_edit):
+            line_edit.setStyleSheet(DEFAULT_STYLE_SHEET)
+            line_edit.setToolTip("")
         else:
-            label.duplicate_warning()
+            line_edit.setStyleSheet(INVALID_STYLE_SHEET)
+            line_edit.setToolTip("Warning: group identifier is a duplicate.")
 
     def check_box_pressed(self):
         if self.sender().isChecked():
@@ -95,10 +99,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self.sender().group().setExclusive(True)
 
     def create_point_group(self):
-        name = self.create_unique_label()
-
-        label = EditableLabel(name)
-        label.text_updated.connect(self.validate_label)
+        line_edit = self.create_unique_line_edit()
+        line_edit.editingFinished.connect(self.validate_line_edit)
 
         check_box = QtWidgets.QCheckBox()
         check_box.setSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
@@ -108,14 +110,13 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._button_group.addButton(check_box)
 
         group = self._field_module.createFieldGroup()
-        group.setName(name)
 
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.addWidget(check_box)
-        horizontal_layout.addWidget(label)
+        horizontal_layout.addWidget(line_edit)
         self._ui.verticalLayout_5.addLayout(horizontal_layout)
 
-        self._check_box_dict[label] = check_box
+        self._check_box_dict[line_edit] = check_box
         self._point_group_dict[check_box] = group
         self._rgb_dict[check_box] = None
         self._update_color_map()
@@ -185,7 +186,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         elif not checked_button:
             dlg = GroupSelectionDialog(self, self._check_box_dict.keys())
             if dlg.exec_():
-                checked_button = self._check_box_dict[dlg.get_label()]
+                checked_button = self._check_box_dict[dlg.get_line_edit()]
             else:
                 return None
 
@@ -225,61 +226,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         selection_field.setManaged(False)
 
 
-class EditableLabel(QtWidgets.QStackedWidget):
-    """
-    This widget contains a QLabel and a QLineEdit. This widget supports renaming of the QLabel but also ensures that the new label
-    text is unique, otherwise we might write two FieldGroups with the same name when it comes to writing the Groups to a file.
-    """
-    text_updated = QtCore.Signal()
-
-    def __init__(self, text):
-        super().__init__()
-
-        self._label = QtWidgets.QLabel(text)
-        self._line_edit = CustomLineEdit(text)
-
-        self.addWidget(self._label)
-        self.addWidget(self._line_edit)
-
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
-        self.setSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
-
-        self._line_edit.editingFinished.connect(self.text_updated.emit)
-
-    def get_label(self):
-        return self._label
-
-    def get_line_edit(self):
-        return self._line_edit
-
-    def mouseDoubleClickEvent(self, event):
-        super().mouseDoubleClickEvent(event)
-        self.setCurrentWidget(self._line_edit)
-        self._line_edit.setFocus()
-
-    def get_text(self):
-        return self._label.text()
-
-    def update_text(self):
-        self._label.setText(self._line_edit.text())
-        self.setCurrentIndex(0)
-
-    # TODO: Give a small "pop-up" message warning that this group name is already in use.
-    def duplicate_warning(self):
-        print("DUPLICATE...")
-
-
-class CustomLineEdit(QtWidgets.QLineEdit):
-    """
-    A Custom QLineEdit that emits the editingFinished signal on focusOutEvent even if there were no changes.
-    """
-    def focusOutEvent(self, event):
-        super().focusOutEvent(event)
-        self.editingFinished.emit()
-
-
 class GroupSelectionDialog(QtWidgets.QDialog):
-    def __init__(self, parent, labels):
+    def __init__(self, parent, line_edits):
         super().__init__(parent)
 
         self.setMinimumSize(300, 200)
@@ -298,13 +246,13 @@ class GroupSelectionDialog(QtWidgets.QDialog):
         message = QtWidgets.QLabel("Choose the group that you wish to add the selected points to:")
         self.layout.addWidget(message)
 
-        self.label_dict = {}
-        for label in labels:
-            text = label.get_text()
+        self.line_edit_dict = {}
+        for line_edit in line_edits:
+            text = line_edit.text()
             check_box = QtWidgets.QCheckBox(text)
             self.button_group.addButton(check_box)
             self.layout.addWidget(check_box)
-            self.label_dict[text] = label
+            self.line_edit_dict[text] = line_edit
 
         self.layout.addStretch()
         self.layout.addWidget(self.button_box)
@@ -313,5 +261,5 @@ class GroupSelectionDialog(QtWidgets.QDialog):
     def _enable_button(self):
         self.button_box.button(QtWidgets.QDialogButtonBox.StandardButton.Ok).setEnabled(True)
 
-    def get_label(self):
-        return self.label_dict[self.button_group.checkedButton().text()]
+    def get_line_edit(self):
+        return self.line_edit_dict[self.button_group.checkedButton().text()]
