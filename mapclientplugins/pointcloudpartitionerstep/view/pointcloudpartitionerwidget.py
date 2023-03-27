@@ -213,12 +213,19 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _continue_execution(self):
         self._remove_ui_region()
+        self._update_group_names()
         self._clear_selection_group()
         self._model.write_model()
         self._callback()
 
     def _remove_ui_region(self):
         self._model.get_region().removeChild(self._model.get_region().findChildByName('normalised'))
+
+    def _update_group_names(self):
+        for line_edit in self._check_box_dict.keys():
+            check_box = self._check_box_dict[line_edit]
+            group = self._point_group_dict[check_box]
+            group.setName(line_edit.text())
 
     def _clear_selection_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
