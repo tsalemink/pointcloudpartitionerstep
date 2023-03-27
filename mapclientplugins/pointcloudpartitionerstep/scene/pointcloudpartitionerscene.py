@@ -21,7 +21,7 @@ class PointCloudPartitionerScene(object):
         Constructor
         """
         self._model = model
-        self._group_graphics = []
+        self._group_graphics_dict = {}
         self._label_graphics = None
         self._setup_visualisation()
 
@@ -49,7 +49,7 @@ class PointCloudPartitionerScene(object):
         if subgroup_field:
             graphic.setSubgroupField(subgroup_field)
             graphic.setMaterial(material)
-            self._group_graphics.append(graphic)
+            self._group_graphics_dict[subgroup_field.getName()] = graphic
 
         attributes = graphic.getGraphicspointattributes()
         attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_SPHERE)
@@ -63,6 +63,11 @@ class PointCloudPartitionerScene(object):
         scene.endChange()
 
         return graphic
+
+    def delete_point_graphics(self, group_name):
+        scene = self._model.get_region().getScene()
+        scene.removeGraphics(self._group_graphics_dict[group_name])
+        del self._group_graphics_dict[group_name]
 
     def create_text_graphics(self, scene, coordinate_field):
         scene.beginChange()
@@ -80,9 +85,8 @@ class PointCloudPartitionerScene(object):
         scene.endChange()
 
     def update_graphics_materials(self, materials):
-        for i in range(len(self._group_graphics)):
-            material = list(materials.values())[i]
-            self._group_graphics[i].setMaterial(material)
+        for (graphic, material) in zip(self._group_graphics_dict.values(), materials.values()):
+            graphic.setMaterial(material)
 
     def update_label_text(self, handler_label):
         attributes = self._label_graphics.getGraphicspointattributes()

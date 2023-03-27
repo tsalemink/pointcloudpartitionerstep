@@ -40,9 +40,10 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._scene = PointCloudPartitionerScene(model)
         self._field_module = self._model.get_region().getFieldmodule()
 
-        self._check_box_dict = {}       # Key is LineEdit, value is CheckBox.
-        self._point_group_dict = {}     # Key is CheckBox, value is Group.
-        self._rgb_dict = {}             # Key is CheckBox, value is RGB-Value.
+        self._check_box_dict = {}           # Key is LineEdit, value is CheckBox.
+        self._horizontal_layout_dict = {}   # Key is CheckBox, value is Layout
+        self._point_group_dict = {}         # Key is CheckBox, value is Group.
+        self._rgb_dict = {}                 # Key is CheckBox, value is RGB-Value.
         self._button_group = QtWidgets.QButtonGroup()
 
         self._make_connections()
@@ -59,6 +60,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pushButtonViewAll.clicked.connect(self._view_all_button_clicked)
         self._ui.widgetZinc.graphics_initialized.connect(self._zinc_widget_ready)
         self._ui.pushButtonCreateGroup.clicked.connect(self.create_point_group)
+        self._ui.pushButtonRemoveGroup.clicked.connect(self.remove_point_group)
         self._ui.pushButtonAddToGroup.clicked.connect(self.add_points_to_group)
         self._ui.pushButtonRemoveFromGroup.clicked.connect(self.remove_points_from_group)
         self._ui.widgetZinc.handler_updated.connect(self.update_label_text)
@@ -110,6 +112,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._button_group.addButton(check_box)
 
         group = self._field_module.createFieldGroup()
+        group.setName("Group_" + str(len(self._point_group_dict) + 1))
 
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.addWidget(check_box)
@@ -117,12 +120,40 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.verticalLayout_5.addLayout(horizontal_layout)
 
         self._check_box_dict[line_edit] = check_box
+        self._horizontal_layout_dict[check_box] = horizontal_layout
         self._point_group_dict[check_box] = group
         self._rgb_dict[check_box] = None
         self._update_color_map()
         self._scene.update_graphics_materials(self._rgb_dict)
         material = self._rgb_dict[check_box]
         self._scene.create_point_graphics(self._model.get_region().getScene(), self._model.get_coordinate_field(), group, material)
+
+    def remove_point_group(self):
+        checked_button = self._button_group.checkedButton()
+        group_name = self._point_group_dict[checked_button].getName()
+
+        # Schedule the group for deletion.
+        self._point_group_dict[checked_button].setManaged(False)
+
+        # Remove UI elements.
+        horizontal_layout = self._horizontal_layout_dict[checked_button]
+        for i in reversed(range(horizontal_layout.count())):
+            horizontal_layout.itemAt(i).widget().deleteLater()
+        horizontal_layout.deleteLater()
+
+        # Remove dictionary entries.
+        del self._rgb_dict[checked_button]
+        del self._point_group_dict[checked_button]
+        del self._horizontal_layout_dict[checked_button]
+        for key in self._check_box_dict.keys():
+            if self._check_box_dict[key] is checked_button:
+                del self._check_box_dict[key]
+                break
+
+        # Update the scene.
+        self._update_color_map()
+        self._scene.update_graphics_materials(self._rgb_dict)
+        self._scene.delete_point_graphics(group_name)
 
     def _update_color_map(self):
         def get_distinct_colors(n):
@@ -230,7 +261,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def _clear_selection_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
         selection_field.clear()
-        selection_field.setManaged(False)
 
 
 class GroupSelectionDialog(QtWidgets.QDialog):
