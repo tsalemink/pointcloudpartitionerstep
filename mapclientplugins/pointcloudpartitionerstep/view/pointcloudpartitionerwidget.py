@@ -39,6 +39,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._model = model
         self._scene = PointCloudPartitionerScene(model)
         self._field_module = self._model.get_region().getFieldmodule()
+        self._ungrouped_nodes = self._get_ungrouped_nodes()
 
         self._check_box_dict = {}           # Key is LineEdit, value is CheckBox.
         self._horizontal_layout_dict = {}   # Key is CheckBox, value is Layout
@@ -64,9 +65,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pushButtonAddToGroup.clicked.connect(self.add_points_to_group)
         self._ui.pushButtonRemoveFromGroup.clicked.connect(self.remove_points_from_group)
         self._ui.widgetZinc.handler_updated.connect(self.update_label_text)
-
-    def load(self, file_location):
-        self._model.load(file_location)
 
     def create_unique_line_edit(self):
         i = len(self._check_box_dict) + 1
@@ -136,6 +134,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         # Schedule the group for deletion.
         self._point_group_dict[checked_button].setManaged(False)
+        self._ungrouped_nodes.addNodesConditional(self._point_group_dict[checked_button])
 
         # Remove UI elements.
         horizontal_layout = self._horizontal_layout_dict[checked_button]
@@ -154,8 +153,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         # Update the scene.
         self._update_color_map()
-        self._scene.update_graphics_materials(self._rgb_dict)
         self._scene.delete_point_graphics(group_name)
+        self._scene.update_graphics_materials(self._rgb_dict)
 
     def _update_color_map(self):
         def get_distinct_colors(n):
@@ -185,6 +184,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         node = node_iter.next()
         while node.isValid():
             nodeset_group.addNode(node)
+            self._ungrouped_nodes.removeNode(node)
             node = node_iter.next()
         selection_field.clear()
 
@@ -200,6 +200,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         node = node_iter.next()
         while node.isValid():
             nodeset_group.removeNode(node)
+            self._ungrouped_nodes.addNode(node)
             node = node_iter.next()
         selection_field.clear()
 
@@ -208,6 +209,11 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
         selection_field_node_group = selection_field.getFieldNodeGroup(self._model.get_nodes())
         return selection_field_node_group.getNodesetGroup()
+
+    def _get_ungrouped_nodes(self):
+        ungrouped_field = self._field_module.findFieldByName("ungrouped").castGroup()
+        field_node_group = ungrouped_field.getFieldNodeGroup(self._model.get_nodes())
+        return field_node_group.getNodesetGroup()
 
     def _get_checked_nodeset_group(self):
         checked_button = self._get_checked_button()

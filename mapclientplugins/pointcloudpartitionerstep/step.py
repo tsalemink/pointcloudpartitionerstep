@@ -47,12 +47,11 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         may be connected up to a button in a widget for example.
         """
         if self._view is None:
-            self._model = PointCloudPartitionerModel()
+            self._model = PointCloudPartitionerModel(self._source_points)
             self._model.set_location(os.path.join(self._location, self._config['identifier']))
             self._view = PointCloudPartitionerWidget(self._model)
             self._view.register_done_execution(self._my_done_execution)
 
-        self._view.load(self._source_points)
         self._setCurrentWidget(self._view)
 
     def _my_done_execution(self):

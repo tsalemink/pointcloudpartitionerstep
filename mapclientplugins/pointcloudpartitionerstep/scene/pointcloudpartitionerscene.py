@@ -30,14 +30,24 @@ class PointCloudPartitionerScene(object):
         scene = region.getScene()
 
         coordinate_field = self._model.get_coordinate_field()
-        self._node_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
-        self._selection_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
+        group = self.create_ungrouped_nodeset_group(coordinate_field)
+
+        self._node_graphics = self.create_point_graphics(scene, coordinate_field, group, None, Graphics.SELECT_MODE_DRAW_SELECTED)
+        self._selection_graphics = self.create_point_graphics(scene, coordinate_field, group, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
 
         normalised_region = region.createChild('normalised')
         normalised_scene = normalised_region.getScene()
         normalised_coordinate_field = create_finite_element_field(normalised_region, 2)
         create_nodes(normalised_coordinate_field, [[10.0, 10.0]])
         self.create_text_graphics(normalised_scene, normalised_coordinate_field)
+
+    def create_ungrouped_nodeset_group(self, coordinate_field):
+        group = self._model.get_region().getFieldmodule().createFieldGroup()
+        group.setName("ungrouped")
+        field_node_group = group.createFieldNodeGroup(self._model.get_nodes())
+        field_node_group.getNodesetGroup().addNodesConditional(coordinate_field)
+
+        return group
 
     def create_point_graphics(self, scene, finite_element_field, subgroup_field, material, mode=Graphics.SELECT_MODE_DRAW_UNSELECTED):
         scene.beginChange()
@@ -48,17 +58,15 @@ class PointCloudPartitionerScene(object):
 
         if subgroup_field:
             graphic.setSubgroupField(subgroup_field)
-            graphic.setMaterial(material)
-            self._group_graphics_dict[subgroup_field.getName()] = graphic
+            if material:
+                graphic.setMaterial(material)
+                self._group_graphics_dict[subgroup_field.getName()] = graphic
 
         attributes = graphic.getGraphicspointattributes()
         attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_SPHERE)
 
         # TODO: Update this to depend on point cloud size.
         attributes.setBaseSize([0.02])
-        # Temporarily increase size of grouped Nodes.
-        if subgroup_field:
-            attributes.setBaseSize([0.03])
 
         scene.endChange()
 

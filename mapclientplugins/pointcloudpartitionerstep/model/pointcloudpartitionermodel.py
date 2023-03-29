@@ -15,7 +15,7 @@ class PointCloudPartitionerModel(object):
     classdocs
     """
 
-    def __init__(self):
+    def __init__(self, source_points):
         """
         Constructor
         """
@@ -31,6 +31,7 @@ class PointCloudPartitionerModel(object):
         self._cache = self._field_module.createFieldcache()
         self._coordinate_field = create_finite_element_field(self._region, 3)
 
+        self.load(source_points)
         self.define_standard_materials()
         self.define_standard_glyphs()
 
