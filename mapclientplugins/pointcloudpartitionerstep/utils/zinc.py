@@ -3,7 +3,7 @@ Created on May 21, 2015
 
 @author: hsorby
 """
-from opencmiss.zinc.element import Element, Elementbasis
+from cmlibs.zinc.element import Element, Elementbasis
 
 
 def create_finite_element_field(region, dimensions):

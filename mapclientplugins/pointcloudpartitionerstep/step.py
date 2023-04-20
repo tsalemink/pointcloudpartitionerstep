@@ -48,15 +48,15 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         """
         if self._view is None:
             self._model = PointCloudPartitionerModel()
-            self._model.set_location(os.path.join(self._location, self._config['identifier']))
             self._view = PointCloudPartitionerWidget(self._model)
             self._view.register_done_execution(self._my_done_execution)
 
+        self._view.set_location(os.path.join(self._location, self._config['identifier']))
+        self._view.clear()
         self._view.load(self._source_points)
         self._setCurrentWidget(self._view)
 
     def _my_done_execution(self):
-        self._output_points = self._model.get_output_filename()
         self._doneExecution()
 
     def setPortData(self, index, data_in):
@@ -73,7 +73,7 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         The index is the index of the port in the port list.  If there is only one
         provides port for this step then the index can be ignored.
         """
-        return self._output_points
+        return self._view.get_output_file()
 
     def configure(self):
         """

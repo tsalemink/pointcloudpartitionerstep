@@ -3,23 +3,22 @@ Created on Jun 22, 2015
 
 @author: tsalemink
 """
-from opencmiss.zinc.field import Field
-from opencmiss.zinc.glyph import Glyph
-from opencmiss.zinc.graphics import Graphics
-from opencmiss.zinc.scenecoordinatesystem import SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT
+from cmlibs.zinc.field import Field
+from cmlibs.zinc.glyph import Glyph
+from cmlibs.zinc.graphics import Graphics
+from cmlibs.zinc.scenecoordinatesystem import SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT
 
 from mapclientplugins.pointcloudpartitionerstep.utils.zinc import create_finite_element_field, create_nodes
 
 
+def _update_point_graphic_size(graphic, size):
+    attributes = graphic.getGraphicspointattributes()
+    attributes.setBaseSize(size)
+
+
 class PointCloudPartitionerScene(object):
-    """
-    classdocs
-    """
 
     def __init__(self, model):
-        """
-        Constructor
-        """
         self._model = model
         self._group_graphics_dict = {}
         self._label_graphics = None
@@ -58,7 +57,7 @@ class PointCloudPartitionerScene(object):
         attributes.setBaseSize([0.02])
         # Temporarily increase size of grouped Nodes.
         if subgroup_field:
-            attributes.setBaseSize([0.03])
+            attributes.setBaseSize([0.3])
 
         scene.endChange()
 
@@ -77,12 +76,18 @@ class PointCloudPartitionerScene(object):
         graphics_points.setCoordinateField(coordinate_field)
         graphics_points.setScenecoordinatesystem(SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT)
 
-        attributes = graphics_points.getGraphicspointattributes()
-        attributes.setGlyphOffset([2.0, 0.0])
-
         self._label_graphics = graphics_points
 
         scene.endChange()
+
+    def set_pixel_scale(self, scale):
+        attributes = self._label_graphics.getGraphicspointattributes()
+        attributes.setGlyphOffset([2.0 * scale, 0.0])
+        font = attributes.getFont()
+        font.setPointSize(int(font.getPointSize() * scale + 0.5))
+        data_point_base_size = 0.05
+        _update_point_graphic_size(self._node_graphics, data_point_base_size * scale)
+        _update_point_graphic_size(self._selection_graphics, data_point_base_size * scale * 1.05)
 
     def update_graphics_materials(self, materials):
         for (graphic, material) in zip(self._group_graphics_dict.values(), materials.values()):
