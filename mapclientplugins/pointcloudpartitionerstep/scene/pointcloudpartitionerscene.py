@@ -11,9 +11,22 @@ from cmlibs.zinc.scenecoordinatesystem import SCENECOORDINATESYSTEM_WINDOW_PIXEL
 from mapclientplugins.pointcloudpartitionerstep.utils.zinc import create_finite_element_field, create_nodes
 
 
-def _update_point_graphic_size(graphic, size):
+def _set_graphic_point_size(graphic, size):
     attributes = graphic.getGraphicspointattributes()
     attributes.setBaseSize(size)
+
+
+def _create_text_graphics(scene, coordinate_field):
+    scene.beginChange()
+
+    graphics_points = scene.createGraphicsPoints()
+    graphics_points.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
+    graphics_points.setCoordinateField(coordinate_field)
+    graphics_points.setScenecoordinatesystem(SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT)
+
+    scene.endChange()
+
+    return graphics_points
 
 
 class PointCloudPartitionerScene(object):
@@ -22,21 +35,29 @@ class PointCloudPartitionerScene(object):
         self._model = model
         self._group_graphics_dict = {}
         self._label_graphics = None
-        self._setup_visualisation()
+        self._node_graphics = None
+        self._selection_graphics = None
+        self._not_field = None
+        self._pixel_scale = 1
+        self._data_point_base_size = 0.15
+        self._setup_label_graphic()
 
-    def _setup_visualisation(self):
-        region = self._model.get_region()
-        scene = region.getScene()
+    def setup_visualisation(self):
+        if self._node_graphics is None and self._selection_graphics is None:
+            region = self._model.get_region()
+            scene = region.getScene()
 
-        coordinate_field = self._model.get_coordinate_field()
-        self._node_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
-        self._selection_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
+            coordinate_field = self._model.get_coordinate_field()
 
-        normalised_region = region.createChild('normalised')
+            self._node_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
+            self._selection_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
+
+    def _setup_label_graphic(self):
+        normalised_region = self._model.get_region().createChild('normalised')
         normalised_scene = normalised_region.getScene()
         normalised_coordinate_field = create_finite_element_field(normalised_region, 2)
         create_nodes(normalised_coordinate_field, [[10.0, 10.0]])
-        self.create_text_graphics(normalised_scene, normalised_coordinate_field)
+        self._label_graphics = _create_text_graphics(normalised_scene, normalised_coordinate_field)
 
     def create_point_graphics(self, scene, finite_element_field, subgroup_field, material, mode=Graphics.SELECT_MODE_DRAW_UNSELECTED):
         scene.beginChange()
@@ -52,42 +73,32 @@ class PointCloudPartitionerScene(object):
 
         attributes = graphic.getGraphicspointattributes()
         attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_SPHERE)
-
-        # TODO: Update this to depend on point cloud size.
-        attributes.setBaseSize([0.02])
-        # Temporarily increase size of grouped Nodes.
-        if subgroup_field:
-            attributes.setBaseSize([0.3])
+        _set_graphic_point_size(graphic, self._data_point_base_size * self._pixel_scale)
 
         scene.endChange()
 
         return graphic
+
+    def update_graphics_name(self, old_name, new_name):
+        self._group_graphics_dict[new_name] = self._group_graphics_dict[old_name]
+        del self._group_graphics_dict[old_name]
 
     def delete_point_graphics(self, group_name):
         scene = self._model.get_region().getScene()
         scene.removeGraphics(self._group_graphics_dict[group_name])
         del self._group_graphics_dict[group_name]
 
-    def create_text_graphics(self, scene, coordinate_field):
-        scene.beginChange()
-
-        graphics_points = scene.createGraphicsPoints()
-        graphics_points.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
-        graphics_points.setCoordinateField(coordinate_field)
-        graphics_points.setScenecoordinatesystem(SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT)
-
-        self._label_graphics = graphics_points
-
-        scene.endChange()
-
     def set_pixel_scale(self, scale):
+        self._pixel_scale = scale
         attributes = self._label_graphics.getGraphicspointattributes()
         attributes.setGlyphOffset([2.0 * scale, 0.0])
         font = attributes.getFont()
         font.setPointSize(int(font.getPointSize() * scale + 0.5))
-        data_point_base_size = 0.05
-        _update_point_graphic_size(self._node_graphics, data_point_base_size * scale)
-        _update_point_graphic_size(self._selection_graphics, data_point_base_size * scale * 1.05)
+
+        _set_graphic_point_size(self._node_graphics, self._data_point_base_size * scale)
+        _set_graphic_point_size(self._selection_graphics, self._data_point_base_size * scale)
+        for graphic in self._group_graphics_dict.values():
+            _set_graphic_point_size(graphic, self._data_point_base_size * scale)
 
     def update_graphics_materials(self, materials):
         for (graphic, material) in zip(self._group_graphics_dict.values(), materials.values()):
@@ -96,3 +107,7 @@ class PointCloudPartitionerScene(object):
     def update_label_text(self, handler_label):
         attributes = self._label_graphics.getGraphicspointattributes()
         attributes.setLabelText(1, handler_label)
+
+    def set_node_graphics_subgroup_field(self, field):
+        if self._node_graphics is not None:
+            self._node_graphics.setSubgroupField(field)

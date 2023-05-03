@@ -3,11 +3,7 @@ Created on Jun 18, 2015
 
 @author: tsalemink
 """
-import os
-
 from cmlibs.zinc.context import Context
-
-from mapclientplugins.pointcloudpartitionerstep.utils.zinc import create_nodes, create_elements, create_finite_element_field
 
 
 class PointCloudPartitionerModel(object):
@@ -19,8 +15,6 @@ class PointCloudPartitionerModel(object):
         self._context = Context("PointCloudPartitioner")
         self._region = self._context.getDefaultRegion()
         self._field_module = self._region.getFieldmodule()
-        self._cache = self._field_module.createFieldcache()
-        self._coordinate_field = create_finite_element_field(self._region, 3)
 
         self.define_standard_materials()
         self.define_standard_glyphs()
@@ -38,13 +32,10 @@ class PointCloudPartitionerModel(object):
         return self._context
 
     def get_coordinate_field(self):
-        return self._coordinate_field
+        return self._field_module.findFieldByName("coordinates")
 
     def get_region(self):
         return self._region
-
-    def get_cache(self):
-        return self._cache
 
     def get_nodes(self):
         return self._nodes
