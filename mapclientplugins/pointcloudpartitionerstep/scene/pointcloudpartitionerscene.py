@@ -8,7 +8,8 @@ from cmlibs.zinc.glyph import Glyph
 from cmlibs.zinc.graphics import Graphics
 from cmlibs.zinc.scenecoordinatesystem import SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT
 
-from mapclientplugins.pointcloudpartitionerstep.utils.zinc import create_finite_element_field, create_nodes
+from cmlibs.utils.zinc.field import create_field_finite_element
+from cmlibs.utils.zinc.finiteelement import create_nodes, create_triangle_elements
 
 
 def _set_graphic_point_size(graphic, size):
@@ -55,7 +56,8 @@ class PointCloudPartitionerScene(object):
     def _setup_label_graphic(self):
         normalised_region = self._model.get_region().createChild('normalised')
         normalised_scene = normalised_region.getScene()
-        normalised_coordinate_field = create_finite_element_field(normalised_region, 2)
+        field_module = normalised_region.getFieldmodule()
+        normalised_coordinate_field = create_field_finite_element(field_module, 'normalised', 2)
         create_nodes(normalised_coordinate_field, [[10.0, 10.0]])
         self._label_graphics = _create_text_graphics(normalised_scene, normalised_coordinate_field)
 
