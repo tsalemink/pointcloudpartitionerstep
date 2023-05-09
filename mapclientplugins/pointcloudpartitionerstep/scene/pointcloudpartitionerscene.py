@@ -110,4 +110,5 @@ class PointCloudPartitionerScene(object):
 
     def set_node_graphics_subgroup_field(self, field):
         if self._node_graphics is not None:
-            self._node_graphics.setSubgroupField(field)
+            if field is not None:
+                self._node_graphics.setSubgroupField(field)
