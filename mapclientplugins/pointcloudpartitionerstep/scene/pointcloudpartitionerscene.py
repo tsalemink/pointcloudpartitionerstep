@@ -141,3 +141,10 @@ class PointCloudPartitionerScene(object):
         if self._node_graphics is not None:
             if field is not None:
                 self._node_graphics.setSubgroupField(field)
+
+    def set_surfaces_visibility(self, state):
+        for graphics in self._surface_graphics_list:
+            graphics.setVisibilityFlag(state != 0)
+
+    def set_points_visibility(self, state):
+        self._node_graphics.setVisibilityFlag(state != 0)

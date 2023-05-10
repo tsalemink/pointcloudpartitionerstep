@@ -80,6 +80,35 @@
        </widget>
       </item>
       <item>
+       <widget class="QGroupBox" name="groupBox_6">
+        <property name="title">
+         <string>Visibility</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_6">
+         <item>
+          <widget class="QCheckBox" name="checkBoxSurfacesVisibility">
+           <property name="text">
+            <string>Surfaces</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QCheckBox" name="checkBoxPointsVisibility">
+           <property name="text">
+            <string>Points</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
        <widget class="QGroupBox" name="groupBox_3">
         <property name="title">
          <string>View</string>

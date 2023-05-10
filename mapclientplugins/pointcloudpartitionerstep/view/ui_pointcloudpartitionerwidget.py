@@ -15,8 +15,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QGroupBox, QHBoxLayout, QPushButton,
-    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QGroupBox, QHBoxLayout,
+    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
+    QWidget)
 
 from mapclientplugins.pointcloudpartitionerstep.view.zincpointcloudpartitionerwidget import ZincPointCloudPartitionerWidget
 
@@ -72,6 +73,25 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.verticalLayout_2.addWidget(self.groupBox_2)
 
+        self.groupBox_6 = QGroupBox(self.groupBox)
+        self.groupBox_6.setObjectName(u"groupBox_6")
+        self.verticalLayout_6 = QVBoxLayout(self.groupBox_6)
+        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
+        self.checkBoxSurfacesVisibility = QCheckBox(self.groupBox_6)
+        self.checkBoxSurfacesVisibility.setObjectName(u"checkBoxSurfacesVisibility")
+        self.checkBoxSurfacesVisibility.setChecked(True)
+
+        self.verticalLayout_6.addWidget(self.checkBoxSurfacesVisibility)
+
+        self.checkBoxPointsVisibility = QCheckBox(self.groupBox_6)
+        self.checkBoxPointsVisibility.setObjectName(u"checkBoxPointsVisibility")
+        self.checkBoxPointsVisibility.setChecked(True)
+
+        self.verticalLayout_6.addWidget(self.checkBoxPointsVisibility)
+
+
+        self.verticalLayout_2.addWidget(self.groupBox_6)
+
         self.groupBox_3 = QGroupBox(self.groupBox)
         self.groupBox_3.setObjectName(u"groupBox_3")
         self.verticalLayout = QVBoxLayout(self.groupBox_3)
@@ -123,6 +143,9 @@ class Ui_PointCloudPartitionerWidget(object):
         self.pushButtonRemoveGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Group", None))
         self.pushButtonAddToGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Add Selected Points to Group", None))
         self.pushButtonRemoveFromGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Selected Points from Group", None))
+        self.groupBox_6.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Visibility", None))
+        self.checkBoxSurfacesVisibility.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Surfaces", None))
+        self.checkBoxPointsVisibility.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Points", None))
         self.groupBox_3.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"View", None))
         self.pushButtonViewAll.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"View All", None))
         self.groupBox_4.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"File", None))

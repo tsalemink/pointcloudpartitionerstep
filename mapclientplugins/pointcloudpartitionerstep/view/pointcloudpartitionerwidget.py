@@ -61,6 +61,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pushButtonRemoveGroup.clicked.connect(self._remove_current_point_group)
         self._ui.pushButtonAddToGroup.clicked.connect(self._add_points_to_group)
         self._ui.pushButtonRemoveFromGroup.clicked.connect(self.remove_points_from_group)
+        self._ui.checkBoxSurfacesVisibility.stateChanged.connect(self._scene.set_surfaces_visibility)
+        self._ui.checkBoxPointsVisibility.stateChanged.connect(self._scene.set_points_visibility)
         self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
 
     def load(self, file_location):
