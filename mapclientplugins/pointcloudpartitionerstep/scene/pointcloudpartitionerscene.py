@@ -9,7 +9,7 @@ from cmlibs.zinc.graphics import Graphics
 from cmlibs.zinc.scenecoordinatesystem import SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT
 
 from cmlibs.utils.zinc.field import create_field_finite_element
-from cmlibs.utils.zinc.finiteelement import create_nodes, create_triangle_elements
+from cmlibs.utils.zinc.finiteelement import create_nodes
 
 
 def _set_graphic_point_size(graphic, size):
@@ -30,12 +30,38 @@ def _create_text_graphics(scene, coordinate_field):
     return graphics_points
 
 
+def setup_surface_graphics(region):
+    surface_graphics_list = []
+    child_region = region.getFirstChild()
+    while child_region.isValid():
+        mesh = child_region.getFieldmodule().findMeshByDimension(2)
+        if mesh.getSize() != 0:
+            surface_graphics_list.append(create_surface_graphics(child_region))
+        child_region = child_region.getNextSibling()
+
+    return surface_graphics_list
+
+
+def create_surface_graphics(mesh_region):
+    mesh_scene = mesh_region.getScene()
+    field_module = mesh_region.getFieldmodule()
+    mesh_coordinates = field_module.findFieldByName("coordinates")
+
+    surfaces = mesh_scene.createGraphicsSurfaces()
+    surfaces.setRenderPolygonMode(Graphics.RENDER_POLYGON_MODE_SHADED)
+    surfaces.setCoordinateField(mesh_coordinates)
+    surfaces.setVisibilityFlag(True)
+
+    return surfaces
+
+
 class PointCloudPartitionerScene(object):
 
     def __init__(self, model):
         self._model = model
         self._group_graphics_dict = {}
         self._label_graphics = None
+        self._surface_graphics_list = None
         self._node_graphics = None
         self._selection_graphics = None
         self._not_field = None
@@ -47,8 +73,9 @@ class PointCloudPartitionerScene(object):
         if self._node_graphics is None and self._selection_graphics is None:
             region = self._model.get_region()
             scene = region.getScene()
-
             coordinate_field = self._model.get_coordinate_field()
+
+            self._surface_graphics_list = setup_surface_graphics(region)
 
             self._node_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
             self._selection_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
