@@ -5,6 +5,7 @@ Created on Jun 18, 2015
 """
 import colorsys
 import os
+import json
 
 from PySide6 import QtWidgets, QtCore
 from cmlibs.zinc.field import Field
@@ -360,6 +361,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.widgetZinc.view_all()
 
     def _continue_execution(self):
+        self._save_settings()
         self._remove_ui_region()
         self._update_group_names()
         self._clear_selection_group()
@@ -378,6 +380,25 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def _clear_selection_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
         selection_field.clear()
+
+    def load_settings(self):
+        if os.path.isfile(self._settings_file()):
+            with open(self._settings_file()) as f:
+                settings = json.load(f)
+
+            if "point_size" in settings:
+                self._ui.pointSizeSpinBox.setValue(settings["point_size"])
+
+    def _save_settings(self):
+        if not os.path.exists(self._location):
+            os.makedirs(self._location)
+
+        settings = {
+            "point_size": self._ui.pointSizeSpinBox.value()
+        }
+
+        with open(self._settings_file(), "w") as f:
+            json.dump(settings, f)
 
 
 class GroupSelectionDialog(QtWidgets.QDialog):
