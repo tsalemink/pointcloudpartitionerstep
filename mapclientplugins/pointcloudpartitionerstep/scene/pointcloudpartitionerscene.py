@@ -124,10 +124,13 @@ class PointCloudPartitionerScene(object):
         font = attributes.getFont()
         font.setPointSize(int(font.getPointSize() * scale + 0.5))
 
-        _set_graphic_point_size(self._node_graphics, self._data_point_base_size * scale)
-        _set_graphic_point_size(self._selection_graphics, self._data_point_base_size * scale)
+        self._update_graphic_point_size()
+
+    def _update_graphic_point_size(self):
+        _set_graphic_point_size(self._node_graphics, self._data_point_base_size * self._pixel_scale)
+        _set_graphic_point_size(self._selection_graphics, self._data_point_base_size * self._pixel_scale)
         for graphic in self._group_graphics_dict.values():
-            _set_graphic_point_size(graphic, self._data_point_base_size * scale)
+            _set_graphic_point_size(graphic, self._data_point_base_size * self._pixel_scale)
 
     def update_graphics_materials(self, materials):
         for (graphic, material) in zip(self._group_graphics_dict.values(), materials.values()):
@@ -141,6 +144,13 @@ class PointCloudPartitionerScene(object):
         if self._node_graphics is not None:
             if field is not None:
                 self._node_graphics.setSubgroupField(field)
+
+    def get_point_size(self):
+        return self._data_point_base_size
+
+    def set_point_size(self, size):
+        self._data_point_base_size = size
+        self._update_graphic_point_size()
 
     def set_surfaces_visibility(self, state):
         for graphics in self._surface_graphics_list:

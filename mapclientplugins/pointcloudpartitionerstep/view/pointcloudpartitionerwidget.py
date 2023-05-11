@@ -43,6 +43,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._rgb_dict = {}                 # Key is CheckBox, value is RGB-Value.
         self._button_group = QtWidgets.QButtonGroup()
 
+        self._setup_point_size_spin_box()
         self._make_connections()
 
         self._ui.widgetZinc.set_context(model.get_context())
@@ -63,7 +64,11 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pushButtonRemoveFromGroup.clicked.connect(self.remove_points_from_group)
         self._ui.checkBoxSurfacesVisibility.stateChanged.connect(self._scene.set_surfaces_visibility)
         self._ui.checkBoxPointsVisibility.stateChanged.connect(self._scene.set_points_visibility)
+        self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
         self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
+
+    def _setup_point_size_spin_box(self):
+        self._ui.pointSizeSpinBox.setValue(self._scene.get_point_size())
 
     def load(self, file_location):
         self._model.load(file_location)
