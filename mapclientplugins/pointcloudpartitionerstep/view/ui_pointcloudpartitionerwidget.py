@@ -70,6 +70,11 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.verticalLayout_4.addWidget(self.pushButtonRemoveFromGroup)
 
+        self.pushButtonSelectPointsOnSurface = QPushButton(self.groupBox_2)
+        self.pushButtonSelectPointsOnSurface.setObjectName(u"pushButtonSelectPointsOnSurface")
+
+        self.verticalLayout_4.addWidget(self.pushButtonSelectPointsOnSurface)
+
 
         self.verticalLayout_2.addWidget(self.groupBox_2)
 
@@ -169,6 +174,7 @@ class Ui_PointCloudPartitionerWidget(object):
         self.pushButtonRemoveGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Group", None))
         self.pushButtonAddToGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Add Selected Points to Group", None))
         self.pushButtonRemoveFromGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Selected Points from Group", None))
+        self.pushButtonSelectPointsOnSurface.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Select Points on Surface", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Visibility", None))
         self.checkBoxSurfacesVisibility.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Surfaces", None))
         self.checkBoxPointsVisibility.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Points", None))

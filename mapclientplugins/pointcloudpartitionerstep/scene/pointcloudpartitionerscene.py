@@ -30,22 +30,10 @@ def _create_text_graphics(scene, coordinate_field):
     return graphics_points
 
 
-def setup_surface_graphics(region):
-    surface_graphics_list = []
-    child_region = region.getFirstChild()
-    while child_region.isValid():
-        mesh = child_region.getFieldmodule().findMeshByDimension(2)
-        if mesh.getSize() != 0:
-            surface_graphics_list.append(create_surface_graphics(child_region))
-        child_region = child_region.getNextSibling()
-
-    return surface_graphics_list
-
-
 def create_surface_graphics(mesh_region):
     mesh_scene = mesh_region.getScene()
     field_module = mesh_region.getFieldmodule()
-    mesh_coordinates = field_module.findFieldByName("coordinates")
+    mesh_coordinates = field_module.findFieldByName("mesh_coordinates")
 
     surfaces = mesh_scene.createGraphicsSurfaces()
     surfaces.setRenderPolygonMode(Graphics.RENDER_POLYGON_MODE_SHADED)
@@ -61,7 +49,7 @@ class PointCloudPartitionerScene(object):
         self._model = model
         self._group_graphics_dict = {}
         self._label_graphics = None
-        self._surface_graphics_list = None
+        self._surface_graphics = None
         self._node_graphics = None
         self._selection_graphics = None
         self._not_field = None
@@ -73,9 +61,9 @@ class PointCloudPartitionerScene(object):
         if self._node_graphics is None and self._selection_graphics is None:
             region = self._model.get_region()
             scene = region.getScene()
-            coordinate_field = self._model.get_coordinate_field()
+            coordinate_field = self._model.get_point_cloud_coordinates()
 
-            self._surface_graphics_list = setup_surface_graphics(region)
+            self._surface_graphics = create_surface_graphics(region)
 
             self._node_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
             self._selection_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
@@ -153,8 +141,7 @@ class PointCloudPartitionerScene(object):
         self._update_graphic_point_size()
 
     def set_surfaces_visibility(self, state):
-        for graphics in self._surface_graphics_list:
-            graphics.setVisibilityFlag(state != 0)
+        self._surface_graphics.setVisibilityFlag(state != 0)
 
     def set_points_visibility(self, state):
         self._node_graphics.setVisibilityFlag(state != 0)

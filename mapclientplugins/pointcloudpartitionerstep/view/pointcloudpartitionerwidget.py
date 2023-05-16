@@ -8,15 +8,18 @@ import os
 import json
 
 from PySide6 import QtWidgets, QtCore
-from cmlibs.zinc.field import Field
 
+from cmlibs.zinc.field import Field, FieldFindMeshLocation
+from cmlibs.zinc.result import RESULT_OK
 from cmlibs.zinc.material import Material
+from cmlibs.utils.zinc.general import ChangeManager
 from cmlibs.widgets.handlers.scenemanipulation import SceneManipulation
 from cmlibs.widgets.handlers.sceneselection import SceneSelection
 from cmlibs.widgets.definitions import SELECTION_GROUP_NAME
 
 from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwidget import Ui_PointCloudPartitionerWidget
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
+
 
 INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
 DEFAULT_STYLE_SHEET = ''
@@ -37,6 +40,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._model = model
         self._scene = PointCloudPartitionerScene(model)
         self._field_module = None
+        self._stored_mesh_location_field = None
 
         self._check_box_dict = {}           # Key is LineEdit, value is CheckBox.
         self._horizontal_layout_dict = {}   # Key is CheckBox, value is Layout
@@ -63,6 +67,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pushButtonRemoveGroup.clicked.connect(self._remove_current_point_group)
         self._ui.pushButtonAddToGroup.clicked.connect(self._add_points_to_group)
         self._ui.pushButtonRemoveFromGroup.clicked.connect(self.remove_points_from_group)
+        self._ui.pushButtonSelectPointsOnSurface.clicked.connect(self._select_points_on_surface)
         self._ui.checkBoxSurfacesVisibility.stateChanged.connect(self._scene.set_surfaces_visibility)
         self._ui.checkBoxPointsVisibility.stateChanged.connect(self._scene.set_points_visibility)
         self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
@@ -207,7 +212,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._update_color_map()
         self._scene.update_graphics_materials(self._rgb_dict)
         material = self._rgb_dict[check_box]
-        self._scene.create_point_graphics(self._model.get_region().getScene(), self._model.get_coordinate_field(), group, material)
+        self._scene.create_point_graphics(self._model.get_region().getScene(), self._model.get_point_cloud_coordinates(), group, material)
 
     def _update_node_graphics_subgroup(self):
         only_one_group = None
@@ -274,7 +279,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _add_points_to_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        selected_nodeset_group = self._get_selected_nodeset_group()
+        selected_nodeset_group = self._get_or_create_selection_group()
         checked_group = self._get_checked_group()
         nodeset_group = self._get_checked_nodeset_group(checked_group)
         if not nodeset_group.isValid():
@@ -293,7 +298,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def remove_points_from_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        selected_nodeset_group = self._get_selected_nodeset_group()
+        selected_nodeset_group = self._get_or_create_selection_group()
         checked_group = self._get_checked_group()
         nodeset_group = self._get_checked_nodeset_group(checked_group)
         if not nodeset_group:
@@ -307,11 +312,73 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             node = node_iter.next()
         selection_field.clear()
 
-    def _get_selected_nodeset_group(self):
-        # Get the NodeSetGroup corresponding with the selected Nodes.
-        selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        selection_field_node_group = selection_field.getFieldNodeGroup(self._model.get_nodes())
-        return selection_field_node_group.getNodesetGroup()
+    def _select_points_on_surface(self):
+        point_coordinate_field = self._model.get_point_cloud_coordinates()
+        mesh_coordinate_field = self._model.get_region().getFieldmodule().findFieldByName("mesh_coordinates")
+        mesh = self._model.get_mesh()
+
+        self._find_mesh_location_field = self._field_module.createFieldFindMeshLocation(
+            point_coordinate_field,
+            mesh_coordinate_field,
+            mesh)
+        if self._find_mesh_location_field.isValid():
+            self._find_mesh_location_field.setSearchMode(FieldFindMeshLocation.SEARCH_MODE_NEAREST)
+
+        point_cloud_nodes = self._model.get_nodes()
+        node_iterator = point_cloud_nodes.createNodeiterator()
+
+        if self._stored_mesh_location_field is None:
+            self._stored_mesh_location_field = self._field_module.createFieldStoredMeshLocation(mesh)
+            self._stored_mesh_location_field.setName('stored_location')
+            if not self._stored_mesh_location_field.isValid():
+                self._stored_mesh_location_field = None
+                raise ValueError('Failed to create stored mesh location field.')
+
+        with ChangeManager(self._field_module):
+            self._data_projection_coordinate_field = self._field_module.createFieldEmbedded(
+                mesh_coordinate_field,
+                self._stored_mesh_location_field)
+            self._data_projection_delta_coordinate_field = self._field_module.createFieldSubtract(
+                self._data_projection_coordinate_field,
+                point_coordinate_field)
+            self._data_projection_error_field = self._field_module.createFieldMagnitude(
+                self._data_projection_delta_coordinate_field)
+
+            node_template = self._model.get_nodes().createNodetemplate()
+            node_template.defineField(self._stored_mesh_location_field)
+            selection_group = self._get_or_create_selection_group()
+            cache = self._field_module.createFieldcache()
+            node = node_iterator.next()
+
+            while node.isValid():
+                cache.setNode(node)
+                element, xi = self._find_mesh_location_field.evaluateMeshLocation(cache, mesh.getDimension())
+                if element.isValid():
+                    node.merge(node_template)
+                    result = self._stored_mesh_location_field.assignMeshLocation(cache, element, xi)
+                    if result != RESULT_OK:
+                        print("Something went wrong.")
+
+                    _, error = self._data_projection_error_field.evaluateReal(cache, 3)
+                    if error[0] < 0.00001:
+                        selection_group.addNode(node)
+
+                node = node_iterator.next()
+
+    def _get_or_create_selection_group(self):
+        selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME)
+        if selection_field.isValid():
+            selection_field = selection_field.castGroup()
+        if not selection_field.isValid():
+            selection_field = self._field_module.createFieldGroup()
+            selection_field.setName(SELECTION_GROUP_NAME)
+        self._model.get_region().getScene().setSelectionField(selection_field)
+
+        selection_node_group = selection_field.getFieldNodeGroup(self._model.get_nodes())
+        if not selection_node_group.isValid():
+            selection_node_group = selection_field.createFieldNodeGroup(self._model.get_nodes())
+
+        return selection_node_group.getNodesetGroup()
 
     def _get_checked_group(self):
         checked_button = self._get_checked_button()
