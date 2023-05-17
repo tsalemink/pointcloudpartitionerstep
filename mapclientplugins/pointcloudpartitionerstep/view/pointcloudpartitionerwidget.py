@@ -279,7 +279,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _add_points_to_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        selected_nodeset_group = self._get_or_create_selection_group()
+        selected_nodeset_group = self._get_node_selection_group()
         checked_group = self._get_checked_group()
         nodeset_group = self._get_checked_nodeset_group(checked_group)
         if not nodeset_group.isValid():
@@ -298,7 +298,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def remove_points_from_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        selected_nodeset_group = self._get_or_create_selection_group()
+        selected_nodeset_group = self._get_node_selection_group()
         checked_group = self._get_checked_group()
         nodeset_group = self._get_checked_nodeset_group(checked_group)
         if not nodeset_group:
@@ -315,7 +315,9 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def _select_points_on_surface(self):
         point_coordinate_field = self._model.get_point_cloud_coordinates()
         mesh_coordinate_field = self._model.get_region().getFieldmodule().findFieldByName("mesh_coordinates")
-        mesh = self._model.get_mesh()
+        mesh = self._get_selected_mesh()
+        if not mesh:
+            return
 
         self._find_mesh_location_field = self._field_module.createFieldFindMeshLocation(
             point_coordinate_field,
@@ -346,7 +348,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
             node_template = self._model.get_nodes().createNodetemplate()
             node_template.defineField(self._stored_mesh_location_field)
-            selection_group = self._get_or_create_selection_group()
+            selection_group = self._get_node_selection_group()
             cache = self._field_module.createFieldcache()
             node = node_iterator.next()
 
@@ -365,7 +367,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
                 node = node_iterator.next()
 
-    def _get_or_create_selection_group(self):
+    def _get_or_create_selection_field(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME)
         if selection_field.isValid():
             selection_field = selection_field.castGroup()
@@ -374,11 +376,27 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             selection_field.setName(SELECTION_GROUP_NAME)
         self._model.get_region().getScene().setSelectionField(selection_field)
 
+        return selection_field
+
+    def _get_node_selection_group(self):
+        selection_field = self._get_or_create_selection_field()
+
         selection_node_group = selection_field.getFieldNodeGroup(self._model.get_nodes())
         if not selection_node_group.isValid():
             selection_node_group = selection_field.createFieldNodeGroup(self._model.get_nodes())
 
         return selection_node_group.getNodesetGroup()
+
+    def _get_selected_mesh(self):
+        selection_field = self._get_or_create_selection_field()
+
+        mesh = self._model.get_mesh()
+        selection_element_group = selection_field.getFieldElementGroup(mesh)
+
+        if selection_element_group.isValid() and (selection_element_group.getMeshGroup().getSize()):
+            return mesh
+        else:
+            return None
 
     def _get_checked_group(self):
         checked_button = self._get_checked_button()
