@@ -18,7 +18,7 @@ from cmlibs.widgets.handlers.scenemanipulation import SceneManipulation
 
 from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwidget import Ui_PointCloudPartitionerWidget
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
-from mapclientplugins.pointcloudpartitionerstep.view.customsceneselection import CustomSceneSelection, MODE_MAP
+from mapclientplugins.pointcloudpartitionerstep.view.customsceneselection import CustomSceneSelection, MODE_MAP, TYPE_MAP
 
 
 INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
@@ -50,6 +50,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._button_group = QtWidgets.QButtonGroup()
 
         self._setup_selection_mode_combo_box()
+        self._setup_selection_type_combo_box()
         self._setup_point_size_spin_box()
         self._make_connections()
 
@@ -70,6 +71,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pushButtonAddToGroup.clicked.connect(self._add_points_to_group)
         self._ui.pushButtonRemoveFromGroup.clicked.connect(self.remove_points_from_group)
         self._ui.comboBoxSelectionMode.currentIndexChanged.connect(self._update_selection_mode)
+        self._ui.comboBoxSelectionType.currentIndexChanged.connect(self._update_selection_type)
         self._ui.pushButtonSelectPointsOnSurface.clicked.connect(self._select_points_on_surface)
         self._ui.checkBoxSurfacesVisibility.stateChanged.connect(self._scene.set_surfaces_visibility)
         self._ui.checkBoxPointsVisibility.stateChanged.connect(self._scene.set_points_visibility)
@@ -79,8 +81,13 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def _setup_selection_mode_combo_box(self):
         self._ui.comboBoxSelectionMode.addItems(MODE_MAP.keys())
 
+    def _setup_selection_type_combo_box(self):
+        self._ui.comboBoxSelectionType.addItems(TYPE_MAP.keys())
+        self._update_selection_mode()
+
     def _setup_point_size_spin_box(self):
         self._ui.pointSizeSpinBox.setValue(self._scene.get_point_size())
+        self._update_selection_type()
 
     def load(self, file_location):
         self._model.load(file_location)
@@ -319,8 +326,12 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         selection_field.clear()
 
     def _update_selection_mode(self):
-        mode = self._ui.comboBoxSelectionMode.currentText()
+        mode = MODE_MAP[self._ui.comboBoxSelectionMode.currentText()]
         self._selection_handler.set_primary_selection_mode(mode)
+
+    def _update_selection_type(self):
+        selection_type = TYPE_MAP[self._ui.comboBoxSelectionType.currentText()]
+        self._selection_handler.set_graphics_selection_mode(selection_type)
 
     def _select_points_on_surface(self):
         point_coordinate_field = self._model.get_point_cloud_coordinates()

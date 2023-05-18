@@ -4,13 +4,19 @@ Created: May, 2023
 @author: tsalemink
 """
 from cmlibs.widgets.handlers.sceneselection import SceneSelection
-from cmlibs.widgets.definitions import BUTTON_MAP, SelectionMode
+from cmlibs.widgets.definitions import BUTTON_MAP, SelectionMode, GraphicsSelectionMode
 from cmlibs.zinc.sceneviewerinput import Sceneviewerinput
 
 
 MODE_MAP = {
     "Exclusive": SelectionMode.EXCLUSIVE,
     "Additive": SelectionMode.ADDITIVE,
+}
+
+
+TYPE_MAP = {
+    "Surfaces": GraphicsSelectionMode.ELEMENTS,
+    "Points": GraphicsSelectionMode.NODE,
 }
 
 
@@ -22,7 +28,7 @@ class CustomSceneSelection(SceneSelection):
         self._primary_selection_mode = SelectionMode.EXCLUSIVE
 
     def set_primary_selection_mode(self, mode):
-        self._primary_selection_mode = MODE_MAP[mode]
+        self._primary_selection_mode = mode
 
     def mouse_press_event(self, event):
         super().mouse_press_event(event)

@@ -88,7 +88,7 @@ class Ui_PointCloudPartitionerWidget(object):
         sizePolicy1.setHeightForWidth(self.comboBoxSelectionMode.sizePolicy().hasHeightForWidth())
         self.comboBoxSelectionMode.setSizePolicy(sizePolicy1)
 
-        self.gridLayout_2.addWidget(self.comboBoxSelectionMode, 0, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.comboBoxSelectionMode, 1, 1, 1, 1)
 
         self.label_2 = QLabel(self.groupBox_5)
         self.label_2.setObjectName(u"label_2")
@@ -98,7 +98,17 @@ class Ui_PointCloudPartitionerWidget(object):
         sizePolicy2.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
         self.label_2.setSizePolicy(sizePolicy2)
 
-        self.gridLayout_2.addWidget(self.label_2, 0, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.label_2, 1, 0, 1, 1)
+
+        self.comboBoxSelectionType = QComboBox(self.groupBox_5)
+        self.comboBoxSelectionType.setObjectName(u"comboBoxSelectionType")
+
+        self.gridLayout_2.addWidget(self.comboBoxSelectionType, 2, 1, 1, 1)
+
+        self.label_3 = QLabel(self.groupBox_5)
+        self.label_3.setObjectName(u"label_3")
+
+        self.gridLayout_2.addWidget(self.label_3, 2, 0, 1, 1)
 
 
         self.verticalLayout_7.addLayout(self.gridLayout_2)
@@ -206,6 +216,7 @@ class Ui_PointCloudPartitionerWidget(object):
         self.pushButtonRemoveFromGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Selected Points from Group", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection", None))
         self.label_2.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection Mode:", None))
+        self.label_3.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection Type:", None))
         self.pushButtonSelectPointsOnSurface.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Select Points on Surface", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Visibility", None))
         self.checkBoxSurfacesVisibility.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Surfaces", None))
