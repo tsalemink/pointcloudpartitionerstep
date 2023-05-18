@@ -13,12 +13,12 @@ from cmlibs.zinc.field import Field, FieldFindMeshLocation
 from cmlibs.zinc.result import RESULT_OK
 from cmlibs.zinc.material import Material
 from cmlibs.utils.zinc.general import ChangeManager
-from cmlibs.widgets.handlers.scenemanipulation import SceneManipulation
-from cmlibs.widgets.handlers.sceneselection import SceneSelection
 from cmlibs.widgets.definitions import SELECTION_GROUP_NAME
+from cmlibs.widgets.handlers.scenemanipulation import SceneManipulation
 
 from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwidget import Ui_PointCloudPartitionerWidget
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
+from mapclientplugins.pointcloudpartitionerstep.view.customsceneselection import CustomSceneSelection, MODE_MAP
 
 
 INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
@@ -39,6 +39,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         self._model = model
         self._scene = PointCloudPartitionerScene(model)
+        self._selection_handler = CustomSceneSelection(QtCore.Qt.Key.Key_S)
         self._field_module = None
         self._stored_mesh_location_field = None
 
@@ -48,12 +49,13 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._rgb_dict = {}                 # Key is CheckBox, value is RGB-Value.
         self._button_group = QtWidgets.QButtonGroup()
 
+        self._setup_selection_mode_combo_box()
         self._setup_point_size_spin_box()
         self._make_connections()
 
         self._ui.widgetZinc.set_context(model.get_context())
         self._ui.widgetZinc.register_handler(SceneManipulation())
-        self._ui.widgetZinc.register_handler(SceneSelection(QtCore.Qt.Key.Key_S))
+        self._ui.widgetZinc.register_handler(self._selection_handler)
         self._ui.widgetZinc.set_model(model)
 
         # self._ui.widgetZinc.setSelectionfilter(model.get_selection_filter())
@@ -67,11 +69,15 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pushButtonRemoveGroup.clicked.connect(self._remove_current_point_group)
         self._ui.pushButtonAddToGroup.clicked.connect(self._add_points_to_group)
         self._ui.pushButtonRemoveFromGroup.clicked.connect(self.remove_points_from_group)
+        self._ui.comboBoxSelectionMode.currentIndexChanged.connect(self._update_selection_mode)
         self._ui.pushButtonSelectPointsOnSurface.clicked.connect(self._select_points_on_surface)
         self._ui.checkBoxSurfacesVisibility.stateChanged.connect(self._scene.set_surfaces_visibility)
         self._ui.checkBoxPointsVisibility.stateChanged.connect(self._scene.set_points_visibility)
         self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
         self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
+
+    def _setup_selection_mode_combo_box(self):
+        self._ui.comboBoxSelectionMode.addItems(MODE_MAP.keys())
 
     def _setup_point_size_spin_box(self):
         self._ui.pointSizeSpinBox.setValue(self._scene.get_point_size())
@@ -312,6 +318,10 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             node = node_iter.next()
         selection_field.clear()
 
+    def _update_selection_mode(self):
+        mode = self._ui.comboBoxSelectionMode.currentText()
+        self._selection_handler.set_primary_selection_mode(mode)
+
     def _select_points_on_surface(self):
         point_coordinate_field = self._model.get_point_cloud_coordinates()
         mesh_coordinate_field = self._model.get_region().getFieldmodule().findFieldByName("mesh_coordinates")
@@ -429,7 +439,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         return checked_button
 
     def _update_label_text(self):
-        handler_label_map = {SceneManipulation: "Mode: View", SceneSelection: "Mode: Selection"}
+        handler_label_map = {SceneManipulation: "Mode: View", CustomSceneSelection: "Mode: Selection"}
         handler_label = handler_label_map[type(self._ui.widgetZinc.get_active_handler())]
         self._scene.update_label_text(handler_label)
 

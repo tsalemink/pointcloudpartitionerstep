@@ -15,9 +15,10 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QDoubleSpinBox, QGridLayout,
-    QGroupBox, QHBoxLayout, QLabel, QPushButton,
-    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox,
+    QGridLayout, QGroupBox, QHBoxLayout, QLabel,
+    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
+    QWidget)
 
 from mapclientplugins.pointcloudpartitionerstep.view.zincpointcloudpartitionerwidget import ZincPointCloudPartitionerWidget
 
@@ -70,13 +71,45 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.verticalLayout_4.addWidget(self.pushButtonRemoveFromGroup)
 
-        self.pushButtonSelectPointsOnSurface = QPushButton(self.groupBox_2)
-        self.pushButtonSelectPointsOnSurface.setObjectName(u"pushButtonSelectPointsOnSurface")
-
-        self.verticalLayout_4.addWidget(self.pushButtonSelectPointsOnSurface)
-
 
         self.verticalLayout_2.addWidget(self.groupBox_2)
+
+        self.groupBox_5 = QGroupBox(self.groupBox)
+        self.groupBox_5.setObjectName(u"groupBox_5")
+        self.verticalLayout_7 = QVBoxLayout(self.groupBox_5)
+        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
+        self.gridLayout_2 = QGridLayout()
+        self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.comboBoxSelectionMode = QComboBox(self.groupBox_5)
+        self.comboBoxSelectionMode.setObjectName(u"comboBoxSelectionMode")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.comboBoxSelectionMode.sizePolicy().hasHeightForWidth())
+        self.comboBoxSelectionMode.setSizePolicy(sizePolicy1)
+
+        self.gridLayout_2.addWidget(self.comboBoxSelectionMode, 0, 1, 1, 1)
+
+        self.label_2 = QLabel(self.groupBox_5)
+        self.label_2.setObjectName(u"label_2")
+        sizePolicy2 = QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
+        self.label_2.setSizePolicy(sizePolicy2)
+
+        self.gridLayout_2.addWidget(self.label_2, 0, 0, 1, 1)
+
+
+        self.verticalLayout_7.addLayout(self.gridLayout_2)
+
+        self.pushButtonSelectPointsOnSurface = QPushButton(self.groupBox_5)
+        self.pushButtonSelectPointsOnSurface.setObjectName(u"pushButtonSelectPointsOnSurface")
+
+        self.verticalLayout_7.addWidget(self.pushButtonSelectPointsOnSurface)
+
+
+        self.verticalLayout_2.addWidget(self.groupBox_5)
 
         self.groupBox_6 = QGroupBox(self.groupBox)
         self.groupBox_6.setObjectName(u"groupBox_6")
@@ -98,21 +131,18 @@ class Ui_PointCloudPartitionerWidget(object):
         self.gridLayout.setObjectName(u"gridLayout")
         self.label = QLabel(self.groupBox_6)
         self.label.setObjectName(u"label")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
-        sizePolicy1.setHorizontalStretch(0)
-        sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
-        self.label.setSizePolicy(sizePolicy1)
+        sizePolicy2.setHeightForWidth(self.label.sizePolicy().hasHeightForWidth())
+        self.label.setSizePolicy(sizePolicy2)
 
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
 
         self.pointSizeSpinBox = QDoubleSpinBox(self.groupBox_6)
         self.pointSizeSpinBox.setObjectName(u"pointSizeSpinBox")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.pointSizeSpinBox.sizePolicy().hasHeightForWidth())
-        self.pointSizeSpinBox.setSizePolicy(sizePolicy2)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.pointSizeSpinBox.sizePolicy().hasHeightForWidth())
+        self.pointSizeSpinBox.setSizePolicy(sizePolicy3)
         self.pointSizeSpinBox.setSingleStep(0.100000000000000)
 
         self.gridLayout.addWidget(self.pointSizeSpinBox, 0, 1, 1, 1)
@@ -152,11 +182,11 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.widgetZinc = ZincPointCloudPartitionerWidget(PointCloudPartitionerWidget)
         self.widgetZinc.setObjectName(u"widgetZinc")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        sizePolicy3.setHorizontalStretch(3)
-        sizePolicy3.setVerticalStretch(1)
-        sizePolicy3.setHeightForWidth(self.widgetZinc.sizePolicy().hasHeightForWidth())
-        self.widgetZinc.setSizePolicy(sizePolicy3)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        sizePolicy4.setHorizontalStretch(3)
+        sizePolicy4.setVerticalStretch(1)
+        sizePolicy4.setHeightForWidth(self.widgetZinc.sizePolicy().hasHeightForWidth())
+        self.widgetZinc.setSizePolicy(sizePolicy4)
 
         self.horizontalLayout.addWidget(self.widgetZinc)
 
@@ -174,6 +204,8 @@ class Ui_PointCloudPartitionerWidget(object):
         self.pushButtonRemoveGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Group", None))
         self.pushButtonAddToGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Add Selected Points to Group", None))
         self.pushButtonRemoveFromGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Selected Points from Group", None))
+        self.groupBox_5.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection", None))
+        self.label_2.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection Mode:", None))
         self.pushButtonSelectPointsOnSurface.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Select Points on Surface", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Visibility", None))
         self.checkBoxSurfacesVisibility.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Surfaces", None))
