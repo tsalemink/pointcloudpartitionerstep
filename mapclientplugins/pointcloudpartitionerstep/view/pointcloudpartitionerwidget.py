@@ -69,7 +69,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pushButtonCreateGroup.clicked.connect(self._create_point_group)
         self._ui.pushButtonRemoveGroup.clicked.connect(self._remove_current_point_group)
         self._ui.pushButtonAddToGroup.clicked.connect(self._add_points_to_group)
-        self._ui.pushButtonRemoveFromGroup.clicked.connect(self._remove_points_from_group)
+        self._ui.pushButtonRemoveFromGroup.clicked.connect(self._remove_selected_points_from_group)
         self._ui.comboBoxSelectionMode.currentIndexChanged.connect(self._update_selection_mode)
         self._ui.comboBoxSelectionType.currentIndexChanged.connect(self._update_selection_type)
         self._ui.pushButtonSelectPointsOnSurface.clicked.connect(self._select_points_on_surface)
@@ -247,6 +247,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _remove_current_point_group(self):
         checked_button = self._button_group.checkedButton()
+        self._remove_points_from_group()
         self._remove_point_group(checked_button)
         self._update_node_graphics_subgroup()
 
@@ -309,13 +310,22 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         selection_field.clear()
         self._field_module.endChange()
 
-    def _remove_points_from_group(self):
+    def _remove_selected_points_from_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
         selected_nodeset_group = self._get_node_selection_group()
+        self._remove_points_from_group(selection_field, selected_nodeset_group)
+
+    def _remove_points_from_group(self, field_group=None, selected_nodeset_group=None):
         checked_group = self._get_checked_group()
         nodeset_group = self._get_checked_nodeset_group(checked_group)
         if not nodeset_group:
             return
+
+        # If the method was called without a selection group, remove all nodes.
+        if field_group is None or selected_nodeset_group is None:
+            checked_button = self._button_group.checkedButton()
+            field_group = self._point_group_dict[checked_button]
+            selected_nodeset_group = nodeset_group
 
         # Remove the selected Nodes from the chosen group.
         node_iter = selected_nodeset_group.createNodeiterator()
@@ -323,7 +333,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         while node.isValid():
             nodeset_group.removeNode(node)
             node = node_iter.next()
-        selection_field.clear()
+        field_group.clear()
 
     def _update_selection_mode(self):
         mode = MODE_MAP[self._ui.comboBoxSelectionMode.currentText()]
