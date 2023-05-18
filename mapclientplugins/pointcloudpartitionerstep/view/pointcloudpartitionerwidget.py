@@ -69,7 +69,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pushButtonCreateGroup.clicked.connect(self._create_point_group)
         self._ui.pushButtonRemoveGroup.clicked.connect(self._remove_current_point_group)
         self._ui.pushButtonAddToGroup.clicked.connect(self._add_points_to_group)
-        self._ui.pushButtonRemoveFromGroup.clicked.connect(self.remove_points_from_group)
+        self._ui.pushButtonRemoveFromGroup.clicked.connect(self._remove_points_from_group)
         self._ui.comboBoxSelectionMode.currentIndexChanged.connect(self._update_selection_mode)
         self._ui.comboBoxSelectionType.currentIndexChanged.connect(self._update_selection_type)
         self._ui.pushButtonSelectPointsOnSurface.clicked.connect(self._select_points_on_surface)
@@ -309,7 +309,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         selection_field.clear()
         self._field_module.endChange()
 
-    def remove_points_from_group(self):
+    def _remove_points_from_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
         selected_nodeset_group = self._get_node_selection_group()
         checked_group = self._get_checked_group()
