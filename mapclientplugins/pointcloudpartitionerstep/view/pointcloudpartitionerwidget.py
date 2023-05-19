@@ -80,14 +80,14 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _setup_selection_mode_combo_box(self):
         self._ui.comboBoxSelectionMode.addItems(MODE_MAP.keys())
+        self._update_selection_mode()
 
     def _setup_selection_type_combo_box(self):
         self._ui.comboBoxSelectionType.addItems(TYPE_MAP.keys())
-        self._update_selection_mode()
+        self._update_selection_type()
 
     def _setup_point_size_spin_box(self):
         self._ui.pointSizeSpinBox.setValue(self._scene.get_point_size())
-        self._update_selection_type()
 
     def load(self, file_location):
         self._model.load(file_location)
@@ -340,8 +340,10 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._selection_handler.set_primary_selection_mode(mode)
 
     def _update_selection_type(self):
+        scene_filter_module = self._model.get_context().getScenefiltermodule()
         selection_type = TYPE_MAP[self._ui.comboBoxSelectionType.currentText()]
-        self._selection_handler.set_graphics_selection_mode(selection_type)
+        scene_filter = scene_filter_module.createScenefilterFieldDomainType(selection_type)
+        self._selection_handler.set_scene_filter(scene_filter)
 
     def _select_points_on_surface(self):
         point_coordinate_field = self._model.get_point_cloud_coordinates()
