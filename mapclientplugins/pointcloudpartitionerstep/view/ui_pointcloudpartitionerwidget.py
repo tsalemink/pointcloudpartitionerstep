@@ -115,6 +115,7 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.pushButtonSelectPointsOnSurface = QPushButton(self.groupBox_5)
         self.pushButtonSelectPointsOnSurface.setObjectName(u"pushButtonSelectPointsOnSurface")
+        self.pushButtonSelectPointsOnSurface.setEnabled(False)
 
         self.verticalLayout_7.addWidget(self.pushButtonSelectPointsOnSurface)
 

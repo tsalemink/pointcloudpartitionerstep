@@ -124,6 +124,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="pushButtonSelectPointsOnSurface">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
            <property name="text">
             <string>Select Points on Surface</string>
            </property>

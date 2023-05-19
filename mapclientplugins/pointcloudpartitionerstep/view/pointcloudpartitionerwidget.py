@@ -77,6 +77,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.checkBoxPointsVisibility.stateChanged.connect(self._scene.set_points_visibility)
         self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
         self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
+        self._ui.widgetZinc.selection_updated.connect(self._check_surface_selection)
 
     def _setup_selection_mode_combo_box(self):
         self._ui.comboBoxSelectionMode.addItems(MODE_MAP.keys())
@@ -399,6 +400,11 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                         selection_group.addNode(node)
 
                 node = node_iterator.next()
+
+    def _check_surface_selection(self):
+        selected_mesh = self._get_selected_mesh()
+        mesh_selected = True if selected_mesh else False
+        self._ui.pushButtonSelectPointsOnSurface.setEnabled(mesh_selected)
 
     def _get_or_create_selection_field(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME)

@@ -6,10 +6,12 @@ Created: April, 2023
 from PySide6 import QtCore
 
 from cmlibs.widgets.basesceneviewerwidget import BaseSceneviewerWidget
+from cmlibs.widgets.handlers.sceneselection import SceneSelection
 
 
 class ZincPointCloudPartitionerWidget(BaseSceneviewerWidget):
     handler_updated = QtCore.Signal()
+    selection_updated = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(ZincPointCloudPartitionerWidget, self).__init__(parent)
@@ -29,3 +31,8 @@ class ZincPointCloudPartitionerWidget(BaseSceneviewerWidget):
     def _activate_handler(self, handler):
         super()._activate_handler(handler)
         self.handler_updated.emit()
+
+    def mouse_release_event(self, event):
+        if isinstance(self.get_active_handler(), SceneSelection):
+            super().mouse_release_event(event)
+            self.selection_updated.emit()
