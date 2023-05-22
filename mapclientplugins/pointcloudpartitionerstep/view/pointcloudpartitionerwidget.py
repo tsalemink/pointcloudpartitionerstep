@@ -352,6 +352,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         mesh_selection_group = self._get_mesh_selection_group()
         if mesh_selection_group.getSize():
             mesh = mesh_selection_group.getMasterMesh()
+            mesh_selection_group.removeAllElements()
         else:
             return
 
