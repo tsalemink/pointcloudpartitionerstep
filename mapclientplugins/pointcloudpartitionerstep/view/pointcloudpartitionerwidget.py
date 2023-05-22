@@ -77,7 +77,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.checkBoxPointsVisibility.stateChanged.connect(self._scene.set_points_visibility)
         self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
         self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
-        self._ui.widgetZinc.selection_updated.connect(self._check_surface_selection)
+        self._ui.widgetZinc.selection_updated.connect(self._update_surface_selection)
 
     def _setup_selection_mode_combo_box(self):
         self._ui.comboBoxSelectionMode.addItems(MODE_MAP.keys())
@@ -349,8 +349,10 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def _select_points_on_surface(self):
         point_coordinate_field = self._model.get_point_cloud_coordinates()
         mesh_coordinate_field = self._model.get_region().getFieldmodule().findFieldByName("mesh_coordinates")
-        mesh = self._get_selected_mesh()
-        if not mesh:
+        mesh_selection_group = self._get_mesh_selection_group()
+        if mesh_selection_group.getSize():
+            mesh = mesh_selection_group.getMasterMesh()
+        else:
             return
 
         self._find_mesh_location_field = self._field_module.createFieldFindMeshLocation(
@@ -401,10 +403,22 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
                 node = node_iterator.next()
 
-    def _check_surface_selection(self):
-        selected_mesh = self._get_selected_mesh()
-        mesh_selected = True if selected_mesh else False
+    def _update_surface_selection(self):
+        mesh_selection_group = self._get_mesh_selection_group()
+        mesh_selected = True if mesh_selection_group.getSize() else False
         self._ui.pushButtonSelectPointsOnSurface.setEnabled(mesh_selected)
+
+        if mesh_selection_group:
+            self._select_all_mesh_elements(mesh_selection_group)
+
+    def _select_all_mesh_elements(self, mesh_selection_group):
+        with ChangeManager(self._field_module):
+            mesh = mesh_selection_group.getMasterMesh()
+            element_iterator = mesh.createElementiterator()
+            element = element_iterator.next()
+            while element.isValid():
+                mesh_selection_group.addElement(element)
+                element = element_iterator.next()
 
     def _get_or_create_selection_field(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME)
@@ -426,16 +440,12 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         return selection_node_group.getNodesetGroup()
 
-    def _get_selected_mesh(self):
-        selection_field = self._get_or_create_selection_field()
-
+    def _get_mesh_selection_group(self):
         mesh = self._model.get_mesh()
+        selection_field = self._get_or_create_selection_field()
         selection_element_group = selection_field.getFieldElementGroup(mesh)
 
-        if selection_element_group.isValid() and (selection_element_group.getMeshGroup().getSize()):
-            return mesh
-        else:
-            return None
+        return selection_element_group.getMeshGroup()
 
     def _get_checked_group(self):
         checked_button = self._get_checked_button()
