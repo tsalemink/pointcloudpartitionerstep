@@ -247,8 +247,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             self._scene.set_node_graphics_subgroup_field(only_one_group)
 
     def _remove_current_point_group(self):
-        checked_button = self._button_group.checkedButton()
-        self._remove_points_from_group()
+        checked_button = self._get_checked_button()
+        self._remove_points_from_group(checked_button)
         self._remove_point_group(checked_button)
         self._update_node_graphics_subgroup()
 
@@ -314,18 +314,18 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def _remove_selected_points_from_group(self):
         selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
         selected_nodeset_group = self._get_node_selection_group()
-        self._remove_points_from_group(selection_field, selected_nodeset_group)
+        checked_button = self._get_checked_button()
+        self._remove_points_from_group(checked_button, selection_field, selected_nodeset_group)
 
-    def _remove_points_from_group(self, field_group=None, selected_nodeset_group=None):
-        checked_group = self._get_checked_group()
+    def _remove_points_from_group(self, checked_button, field_group=None, selected_nodeset_group=None):
+        checked_group = self._point_group_dict.get(checked_button, None)
         nodeset_group = self._get_checked_nodeset_group(checked_group)
         if not nodeset_group:
             return
 
         # If the method was called without a selection group, remove all nodes.
         if field_group is None or selected_nodeset_group is None:
-            checked_button = self._button_group.checkedButton()
-            field_group = self._point_group_dict[checked_button]
+            field_group = checked_group
             selected_nodeset_group = nodeset_group
 
         # Remove the selected Nodes from the chosen group.
