@@ -12,6 +12,7 @@ from cmlibs.zinc.field import Field
 MODE_MAP = {
     "Exclusive": SelectionMode.EXCLUSIVE,
     "Additive": SelectionMode.ADDITIVE,
+    "Intersection": SelectionMode.INTERSECTION,
 }
 
 
