@@ -26,13 +26,15 @@ class Ui_PointCloudPartitionerWidget(object):
     def setupUi(self, PointCloudPartitionerWidget):
         if not PointCloudPartitionerWidget.objectName():
             PointCloudPartitionerWidget.setObjectName(u"PointCloudPartitionerWidget")
-        PointCloudPartitionerWidget.resize(884, 640)
-        self.horizontalLayout = QHBoxLayout(PointCloudPartitionerWidget)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        PointCloudPartitionerWidget.resize(884, 730)
+        self.verticalLayout_10 = QVBoxLayout(PointCloudPartitionerWidget)
+        self.verticalLayout_10.setObjectName(u"verticalLayout_10")
         self.groupBox = QGroupBox(PointCloudPartitionerWidget)
         self.groupBox.setObjectName(u"groupBox")
-        self.verticalLayout_2 = QVBoxLayout(self.groupBox)
-        self.verticalLayout_2.setObjectName(u"verticalLayout_2")
+        self.horizontalLayout_2 = QHBoxLayout(self.groupBox)
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.verticalLayout_9 = QVBoxLayout()
+        self.verticalLayout_9.setObjectName(u"verticalLayout_9")
         self.groupBox_2 = QGroupBox(self.groupBox)
         self.groupBox_2.setObjectName(u"groupBox_2")
         sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -72,7 +74,7 @@ class Ui_PointCloudPartitionerWidget(object):
         self.verticalLayout_4.addWidget(self.pushButtonRemoveFromGroup)
 
 
-        self.verticalLayout_2.addWidget(self.groupBox_2)
+        self.verticalLayout_9.addWidget(self.groupBox_2)
 
         self.groupBox_7 = QGroupBox(self.groupBox)
         self.groupBox_7.setObjectName(u"groupBox_7")
@@ -106,7 +108,7 @@ class Ui_PointCloudPartitionerWidget(object):
         self.verticalLayout_8.addLayout(self.gridLayout_3)
 
 
-        self.verticalLayout_2.addWidget(self.groupBox_7)
+        self.verticalLayout_9.addWidget(self.groupBox_7)
 
         self.groupBox_5 = QGroupBox(self.groupBox)
         self.groupBox_5.setObjectName(u"groupBox_5")
@@ -154,7 +156,7 @@ class Ui_PointCloudPartitionerWidget(object):
         self.verticalLayout_7.addWidget(self.pushButtonSelectPointsOnSurface)
 
 
-        self.verticalLayout_2.addWidget(self.groupBox_5)
+        self.verticalLayout_9.addWidget(self.groupBox_5)
 
         self.groupBox_6 = QGroupBox(self.groupBox)
         self.groupBox_6.setObjectName(u"groupBox_6")
@@ -196,7 +198,7 @@ class Ui_PointCloudPartitionerWidget(object):
         self.verticalLayout_6.addLayout(self.gridLayout)
 
 
-        self.verticalLayout_2.addWidget(self.groupBox_6)
+        self.verticalLayout_9.addWidget(self.groupBox_6)
 
         self.groupBox_3 = QGroupBox(self.groupBox)
         self.groupBox_3.setObjectName(u"groupBox_3")
@@ -208,24 +210,12 @@ class Ui_PointCloudPartitionerWidget(object):
         self.verticalLayout.addWidget(self.pushButtonViewAll)
 
 
-        self.verticalLayout_2.addWidget(self.groupBox_3)
-
-        self.groupBox_4 = QGroupBox(self.groupBox)
-        self.groupBox_4.setObjectName(u"groupBox_4")
-        self.verticalLayout_3 = QVBoxLayout(self.groupBox_4)
-        self.verticalLayout_3.setObjectName(u"verticalLayout_3")
-        self.pushButtonContinue = QPushButton(self.groupBox_4)
-        self.pushButtonContinue.setObjectName(u"pushButtonContinue")
-
-        self.verticalLayout_3.addWidget(self.pushButtonContinue)
+        self.verticalLayout_9.addWidget(self.groupBox_3)
 
 
-        self.verticalLayout_2.addWidget(self.groupBox_4)
+        self.horizontalLayout_2.addLayout(self.verticalLayout_9)
 
-
-        self.horizontalLayout.addWidget(self.groupBox)
-
-        self.widgetZinc = ZincPointCloudPartitionerWidget(PointCloudPartitionerWidget)
+        self.widgetZinc = ZincPointCloudPartitionerWidget(self.groupBox)
         self.widgetZinc.setObjectName(u"widgetZinc")
         sizePolicy4 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
         sizePolicy4.setHorizontalStretch(3)
@@ -233,7 +223,24 @@ class Ui_PointCloudPartitionerWidget(object):
         sizePolicy4.setHeightForWidth(self.widgetZinc.sizePolicy().hasHeightForWidth())
         self.widgetZinc.setSizePolicy(sizePolicy4)
 
-        self.horizontalLayout.addWidget(self.widgetZinc)
+        self.horizontalLayout_2.addWidget(self.widgetZinc)
+
+
+        self.verticalLayout_10.addWidget(self.groupBox)
+
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.horizontalSpacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.horizontalLayout.addItem(self.horizontalSpacer)
+
+        self.pushButtonContinue = QPushButton(PointCloudPartitionerWidget)
+        self.pushButtonContinue.setObjectName(u"pushButtonContinue")
+
+        self.horizontalLayout.addWidget(self.pushButtonContinue)
+
+
+        self.verticalLayout_10.addLayout(self.horizontalLayout)
 
 
         self.retranslateUi(PointCloudPartitionerWidget)
@@ -262,7 +269,6 @@ class Ui_PointCloudPartitionerWidget(object):
         self.label.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Point Size:", None))
         self.groupBox_3.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"View", None))
         self.pushButtonViewAll.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"View All", None))
-        self.groupBox_4.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"File", None))
         self.pushButtonContinue.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Continue", None))
     # retranslateUi
 
