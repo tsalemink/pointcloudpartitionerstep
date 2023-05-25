@@ -32,12 +32,8 @@ def _create_text_graphics(scene, coordinate_field):
 
 def create_surface_graphics(mesh_region):
     mesh_scene = mesh_region.getScene()
-    field_module = mesh_region.getFieldmodule()
-    mesh_coordinates = field_module.findFieldByName("mesh_coordinates")
-
     surfaces = mesh_scene.createGraphicsSurfaces()
     surfaces.setRenderPolygonMode(Graphics.RENDER_POLYGON_MODE_SHADED)
-    surfaces.setCoordinateField(mesh_coordinates)
     surfaces.setVisibilityFlag(True)
 
     return surfaces
@@ -61,12 +57,11 @@ class PointCloudPartitionerScene(object):
         if self._node_graphics is None and self._selection_graphics is None:
             region = self._model.get_region()
             scene = region.getScene()
-            coordinate_field = self._model.get_point_cloud_coordinates()
 
             self._surface_graphics = create_surface_graphics(region)
 
-            self._node_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
-            self._selection_graphics = self.create_point_graphics(scene, coordinate_field, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
+            self._node_graphics = self.create_point_graphics(scene, None, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
+            self._selection_graphics = self.create_point_graphics(scene, None, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
 
     def _setup_label_graphic(self):
         normalised_region = self._model.get_region().createChild('normalised')
@@ -80,7 +75,10 @@ class PointCloudPartitionerScene(object):
         scene.beginChange()
         graphic = scene.createGraphicsPoints()
         graphic.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
-        graphic.setCoordinateField(finite_element_field)
+
+        if finite_element_field:
+            graphic.setCoordinateField(finite_element_field)
+
         graphic.setSelectMode(mode)
 
         if subgroup_field:
@@ -95,6 +93,15 @@ class PointCloudPartitionerScene(object):
         scene.endChange()
 
         return graphic
+
+    def update_point_cloud_coordinates(self, field_name):
+        coordinate_field = self._model.get_field_module().findFieldByName(field_name)
+        self._node_graphics.setCoordinateField(coordinate_field)
+        self._selection_graphics.setCoordinateField(coordinate_field)
+
+    def update_mesh_coordinates(self, field_name):
+        coordinate_field = self._model.get_field_module().findFieldByName(field_name)
+        self._surface_graphics.setCoordinateField(coordinate_field)
 
     def update_graphics_name(self, old_name, new_name):
         self._group_graphics_dict[new_name] = self._group_graphics_dict[old_name]

@@ -74,6 +74,40 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.verticalLayout_2.addWidget(self.groupBox_2)
 
+        self.groupBox_7 = QGroupBox(self.groupBox)
+        self.groupBox_7.setObjectName(u"groupBox_7")
+        self.verticalLayout_8 = QVBoxLayout(self.groupBox_7)
+        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
+        self.gridLayout_3 = QGridLayout()
+        self.gridLayout_3.setObjectName(u"gridLayout_3")
+        self.pointsFieldComboBox = QComboBox(self.groupBox_7)
+        self.pointsFieldComboBox.setObjectName(u"pointsFieldComboBox")
+
+        self.gridLayout_3.addWidget(self.pointsFieldComboBox, 0, 1, 1, 1)
+
+        self.pointsFieldLabel = QLabel(self.groupBox_7)
+        self.pointsFieldLabel.setObjectName(u"pointsFieldLabel")
+        self.pointsFieldLabel.setMaximumSize(QSize(160, 16777215))
+
+        self.gridLayout_3.addWidget(self.pointsFieldLabel, 0, 0, 1, 1)
+
+        self.meshFieldLabel = QLabel(self.groupBox_7)
+        self.meshFieldLabel.setObjectName(u"meshFieldLabel")
+        self.meshFieldLabel.setMaximumSize(QSize(160, 16777215))
+
+        self.gridLayout_3.addWidget(self.meshFieldLabel, 1, 0, 1, 1)
+
+        self.meshFieldComboBox = QComboBox(self.groupBox_7)
+        self.meshFieldComboBox.setObjectName(u"meshFieldComboBox")
+
+        self.gridLayout_3.addWidget(self.meshFieldComboBox, 1, 1, 1, 1)
+
+
+        self.verticalLayout_8.addLayout(self.gridLayout_3)
+
+
+        self.verticalLayout_2.addWidget(self.groupBox_7)
+
         self.groupBox_5 = QGroupBox(self.groupBox)
         self.groupBox_5.setObjectName(u"groupBox_5")
         self.verticalLayout_7 = QVBoxLayout(self.groupBox_5)
@@ -215,6 +249,9 @@ class Ui_PointCloudPartitionerWidget(object):
         self.pushButtonRemoveGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Group", None))
         self.pushButtonAddToGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Add Selected Points to Group", None))
         self.pushButtonRemoveFromGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Selected Points from Group", None))
+        self.groupBox_7.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Field Chooser", None))
+        self.pointsFieldLabel.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Points Coordinates Field:", None))
+        self.meshFieldLabel.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Mesh Coordinates Field:", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection", None))
         self.label_2.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection Mode:", None))
         self.label_3.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection Type:", None))

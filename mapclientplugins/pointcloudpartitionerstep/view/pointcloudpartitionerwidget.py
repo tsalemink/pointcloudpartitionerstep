@@ -42,6 +42,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._selection_handler = CustomSceneSelection(QtCore.Qt.Key.Key_S)
         self._field_module = None
         self._stored_mesh_location_field = None
+        self._field_list = ["---"]
 
         self._check_box_dict = {}           # Key is LineEdit, value is CheckBox.
         self._horizontal_layout_dict = {}   # Key is CheckBox, value is Layout
@@ -70,6 +71,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pushButtonRemoveGroup.clicked.connect(self._remove_current_point_group)
         self._ui.pushButtonAddToGroup.clicked.connect(self._add_points_to_group)
         self._ui.pushButtonRemoveFromGroup.clicked.connect(self._remove_selected_points_from_group)
+        self._ui.pointsFieldComboBox.textActivated.connect(self._update_point_cloud_field)
+        self._ui.meshFieldComboBox.textActivated.connect(self._update_mesh_field)
         self._ui.comboBoxSelectionMode.currentIndexChanged.connect(self._update_selection_mode)
         self._ui.comboBoxSelectionType.currentIndexChanged.connect(self._update_selection_type)
         self._ui.pushButtonSelectPointsOnSurface.clicked.connect(self._select_points_on_surface)
@@ -78,6 +81,20 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
         self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
         self._ui.widgetZinc.selection_updated.connect(self._update_surface_selection)
+
+    def _setup_field_combo_boxes(self):
+        self._ui.pointsFieldComboBox.addItems(self._field_list)
+        self._ui.meshFieldComboBox.addItems(self._field_list)
+
+    def _update_point_cloud_field(self):
+        self._model.update_point_cloud_coordinates(self._ui.pointsFieldComboBox.currentText())
+        self._scene.update_point_cloud_coordinates(self._ui.pointsFieldComboBox.currentText())
+        self._ui.widgetZinc.view_all()
+
+    def _update_mesh_field(self):
+        self._model.update_mesh_coordinates(self._ui.meshFieldComboBox.currentText())
+        self._scene.update_mesh_coordinates(self._ui.meshFieldComboBox.currentText())
+        self._ui.widgetZinc.view_all()
 
     def _setup_selection_mode_combo_box(self):
         self._ui.comboBoxSelectionMode.addItems(MODE_MAP.keys())
@@ -93,12 +110,20 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def load(self, file_location):
         self._model.load(file_location)
         self._scene.setup_visualisation()
+
+        self._get_fields()
+        self._update_node_graphics_subgroup()
+        self._setup_field_combo_boxes()
+
+    def _get_fields(self):
         region = self._model.get_region()
         self._field_module = region.getFieldmodule()
         field_iter = self._field_module.createFielditerator()
         field = field_iter.next()
         node_points = self._field_module.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
         while field.isValid():
+            if field.isTypeCoordinate() and (field.getNumberOfComponents() == 3) and (field.castFiniteElement().isValid()):
+                self._field_list.append(field.getName())
             node_group = field.castGroup()
             if node_group.isValid():
                 field_node_group = node_group.getFieldNodeGroup(node_points)
@@ -106,8 +131,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                 if nodeset_group.isValid():
                     self._add_point_group(node_group)
             field = field_iter.next()
-
-        self._update_node_graphics_subgroup()
 
     def clear(self):
         buttons = self._button_group.buttons()
@@ -348,11 +371,12 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _select_points_on_surface(self):
         point_coordinate_field = self._model.get_point_cloud_coordinates()
-        mesh_coordinate_field = self._model.get_region().getFieldmodule().findFieldByName("mesh_coordinates")
+        mesh_coordinate_field = self._model.get_mesh_coordinates()
         mesh_selection_group = self._get_mesh_selection_group()
         if mesh_selection_group.getSize():
             mesh = mesh_selection_group.getMasterMesh()
-            mesh_selection_group.removeAllElements()
+            self._selection_handler.clear_selection()
+            self._ui.pushButtonSelectPointsOnSurface.setEnabled(False)
         else:
             return
 

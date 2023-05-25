@@ -9,6 +9,8 @@ from cmlibs.zinc.context import Context
 class PointCloudPartitionerModel(object):
 
     def __init__(self):
+        self._point_cloud_coordinates_field = None
+        self._mesh_coordinates_field = None
         self._point_cloud_nodes = None
         self._selection_group = None
         self._mesh = None
@@ -31,7 +33,6 @@ class PointCloudPartitionerModel(object):
         nodes = self._field_module.findNodesetByName("nodes")
         point_cloud_group_field = self._field_module.createFieldNodeGroup(nodes)
         self._point_cloud_nodes = point_cloud_group_field.getNodesetGroup()
-        self._point_cloud_nodes.addNodesConditional(self.get_point_cloud_coordinates())
 
         self._mesh = self._field_module.findMeshByDimension(2)
 
@@ -39,13 +40,24 @@ class PointCloudPartitionerModel(object):
         return self._context
 
     def get_point_cloud_coordinates(self):
-        return self._field_module.findFieldByName("data_coordinates")
+        return self._point_cloud_coordinates_field
+
+    def update_point_cloud_coordinates(self, field_name):
+        self._point_cloud_coordinates_field = self._field_module.findFieldByName(field_name)
+        self._point_cloud_nodes.removeAllNodes()
+        self._point_cloud_nodes.addNodesConditional(self._point_cloud_coordinates_field)
 
     def get_mesh_coordinates(self):
-        return self._field_module.findFieldByName("mesh_coordinates")
+        return self._mesh_coordinates_field
+
+    def update_mesh_coordinates(self, field_name):
+        self._mesh_coordinates_field = self._field_module.findFieldByName(field_name)
 
     def get_region(self):
         return self._region
+
+    def get_field_module(self):
+        return self._field_module
 
     def get_nodes(self):
         return self._point_cloud_nodes
