@@ -16,8 +16,10 @@ class PointCloudPartitionerModel(object):
         self._mesh = None
 
         self._context = Context("PointCloudPartitioner")
-        self._region = self._context.getDefaultRegion()
-        self._field_module = self._region.getFieldmodule()
+        root_region = self._context.getDefaultRegion()
+        self._points_region = root_region.createChild("points")
+        self._label_region = root_region.createChild("label")
+        self._surfaces_region = root_region.createChild("surfaces")
 
         self.define_standard_materials()
         self.define_standard_glyphs()
@@ -27,14 +29,19 @@ class PointCloudPartitionerModel(object):
     def get_selection_filter(self):
         return self._selection_filter
 
-    def load(self, file_location):
-        self._region.readFile(file_location)
+    def load(self, points_file_location, surface_segmentation_file_location):
+        self._points_region.readFile(points_file_location)
 
-        nodes = self._field_module.findNodesetByName("nodes")
-        point_cloud_group_field = self._field_module.createFieldNodeGroup(nodes)
+        if surface_segmentation_file_location is not None:
+            self._surfaces_region.readFile(surface_segmentation_file_location)
+
+        points_field_module = self._points_region.getFieldmodule()
+        nodes = points_field_module.findNodesetByName("nodes")
+        point_cloud_group_field = points_field_module.createFieldNodeGroup(nodes)
         self._point_cloud_nodes = point_cloud_group_field.getNodesetGroup()
 
-        self._mesh = self._field_module.findMeshByDimension(2)
+        surface_segmentation_field_module = self._surfaces_region.getFieldmodule()
+        self._mesh = surface_segmentation_field_module.findMeshByDimension(2)
 
     def get_context(self):
         return self._context
@@ -43,7 +50,8 @@ class PointCloudPartitionerModel(object):
         return self._point_cloud_coordinates_field
 
     def update_point_cloud_coordinates(self, field_name):
-        self._point_cloud_coordinates_field = self._field_module.findFieldByName(field_name)
+        points_field_module = self._points_region.getFieldmodule()
+        self._point_cloud_coordinates_field = points_field_module.findFieldByName(field_name)
         self._point_cloud_nodes.removeAllNodes()
         self._point_cloud_nodes.addNodesConditional(self._point_cloud_coordinates_field)
 
@@ -51,13 +59,21 @@ class PointCloudPartitionerModel(object):
         return self._mesh_coordinates_field
 
     def update_mesh_coordinates(self, field_name):
-        self._mesh_coordinates_field = self._field_module.findFieldByName(field_name)
+        surface_segmentation_field_module = self._surfaces_region.getFieldmodule()
+        self._mesh_coordinates_field = surface_segmentation_field_module.findFieldByName(field_name)
 
-    def get_region(self):
-        return self._region
+    def get_points_region(self):
+        return self._points_region
 
-    def get_field_module(self):
-        return self._field_module
+    def get_label_region(self):
+        return self._label_region
+
+    def get_surfaces_region(self):
+        return self._surfaces_region
+
+    def remove_label_region(self):
+        root_region = self._context.getDefaultRegion()
+        root_region.removeChild(self._label_region)
 
     def get_nodes(self):
         return self._point_cloud_nodes

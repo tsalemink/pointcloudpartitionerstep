@@ -31,6 +31,13 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         self.addPort(('http://physiomeproject.org/workflow/1.0/rdf-schema#port',
                       'http://physiomeproject.org/workflow/1.0/rdf-schema#provides',
                       'http://physiomeproject.org/workflow/1.0/rdf-schema#file_location'))
+        self.addPort([('http://physiomeproject.org/workflow/1.0/rdf-schema#port',
+                       'http://physiomeproject.org/workflow/1.0/rdf-schema#uses',
+                       'http://physiomeproject.org/workflow/1.0/rdf-schema#exf_file'),
+                      ('http://physiomeproject.org/workflow/1.0/rdf-schema#port',
+                       'http://physiomeproject.org/workflow/1.0/rdf-schema#uses',
+                       'http://physiomeproject.org/workflow/1.0/rdf-schema#file_location')
+                      ])
         self._config = {
             'identifier': ''
         }
@@ -38,6 +45,7 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         self._view = None
         self._model = None
         self._source_points = None
+        self._segmentation_surface = None
         self._output_points = None
 
     def execute(self):
@@ -53,7 +61,7 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
 
         self._view.set_location(os.path.join(self._location, self._config['identifier']))
         self._view.clear()
-        self._view.load(self._source_points)
+        self._view.load(self._source_points, self._segmentation_surface)
         self._view.load_settings()
         self._setCurrentWidget(self._view)
 
@@ -66,7 +74,10 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         The index is the index of the port in the port list.  If there is only one
         uses port for this step then the index can be ignored.
         """
-        self._source_points = data_in
+        if index == 0:
+            self._source_points = data_in
+        elif index == 2:
+            self._segmentation_surface = data_in
 
     def getPortData(self, index):
         """

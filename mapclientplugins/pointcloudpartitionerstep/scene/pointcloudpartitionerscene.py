@@ -6,6 +6,7 @@ Created: April, 2023
 from cmlibs.zinc.field import Field
 from cmlibs.zinc.glyph import Glyph
 from cmlibs.zinc.graphics import Graphics
+from cmlibs.zinc.material import Material
 from cmlibs.zinc.scenecoordinatesystem import SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT
 
 from cmlibs.utils.zinc.field import create_field_finite_element
@@ -30,11 +31,31 @@ def _create_text_graphics(scene, coordinate_field):
     return graphics_points
 
 
-def create_surface_graphics(mesh_region):
+def _create_surface_graphics(mesh_region):
     mesh_scene = mesh_region.getScene()
     surfaces = mesh_scene.createGraphicsSurfaces()
     surfaces.setRenderPolygonMode(Graphics.RENDER_POLYGON_MODE_SHADED)
     surfaces.setVisibilityFlag(True)
+
+    # field_module = mesh_region.getFieldmodule()
+    # material_module = mesh_scene.getMaterialmodule()
+    # model_coordinates = field_module.findFieldByName("coordinates")
+    # cmiss_number = field_module.findFieldByName("cmiss_number")
+    # selection_group = field_module.findFieldByName("cmiss_selection")
+
+    # element_numbers = mesh_scene.createGraphicsPoints()
+    # element_numbers.setFieldDomainType(Field.DOMAIN_TYPE_MESH_HIGHEST_DIMENSION)
+    # element_numbers.setCoordinateField(model_coordinates)
+    # element_numbers.setSubgroupField(selection_group)
+    # point_attr = element_numbers.getGraphicspointattributes()
+    # point_attr.setLabelField(cmiss_number)
+    # point_attr.setLabelOffset([0.3, 0.3, 0.3])
+    # point_attr.setGlyphShapeType(Glyph.SHAPE_TYPE_NONE)
+    # invisible_material = material_module.createMaterial()
+    # invisible_material.setAttributeReal(Material.ATTRIBUTE_ALPHA, 0.0)
+    # element_numbers.setMaterial(invisible_material)
+    # element_numbers.setSelectedMaterial(material_module.findMaterialByName("green"))
+    # element_numbers.setName("display_element_numbers")
 
     return surfaces
 
@@ -55,16 +76,17 @@ class PointCloudPartitionerScene(object):
 
     def setup_visualisation(self):
         if self._node_graphics is None and self._selection_graphics is None:
-            region = self._model.get_region()
-            scene = region.getScene()
+            points_region = self._model.get_points_region()
+            surfaces_region = self._model.get_surfaces_region()
+            scene = points_region.getScene()
 
-            self._surface_graphics = create_surface_graphics(region)
+            self._surface_graphics = _create_surface_graphics(surfaces_region)
 
             self._node_graphics = self.create_point_graphics(scene, None, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
             self._selection_graphics = self.create_point_graphics(scene, None, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
 
     def _setup_label_graphic(self):
-        normalised_region = self._model.get_region().createChild('normalised')
+        normalised_region = self._model.get_label_region()
         normalised_scene = normalised_region.getScene()
         field_module = normalised_region.getFieldmodule()
         normalised_coordinate_field = create_field_finite_element(field_module, 'normalised', 2)
@@ -94,13 +116,13 @@ class PointCloudPartitionerScene(object):
 
         return graphic
 
-    def update_point_cloud_coordinates(self, field_name):
-        coordinate_field = self._model.get_field_module().findFieldByName(field_name)
+    def update_point_cloud_coordinates(self):
+        coordinate_field = self._model.get_point_cloud_coordinates()
         self._node_graphics.setCoordinateField(coordinate_field)
         self._selection_graphics.setCoordinateField(coordinate_field)
 
-    def update_mesh_coordinates(self, field_name):
-        coordinate_field = self._model.get_field_module().findFieldByName(field_name)
+    def update_mesh_coordinates(self):
+        coordinate_field = self._model.get_mesh_coordinates()
         self._surface_graphics.setCoordinateField(coordinate_field)
 
     def update_graphics_name(self, old_name, new_name):
@@ -108,7 +130,7 @@ class PointCloudPartitionerScene(object):
         del self._group_graphics_dict[old_name]
 
     def delete_point_graphics(self, group_name):
-        scene = self._model.get_region().getScene()
+        scene = self._model.get_points_region().getScene()
         scene.removeGraphics(self._group_graphics_dict[group_name])
         del self._group_graphics_dict[group_name]
 
