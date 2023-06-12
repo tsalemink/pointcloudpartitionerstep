@@ -445,6 +445,9 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         mesh_coordinate_field = self._model.get_mesh_coordinates()
         selection_mesh_group = self._get_mesh_selection_group()
 
+        points_region = self._model.get_points_region()
+        scene = points_region.getScene()
+
         client_field_module = point_coordinate_field.getFieldmodule()
         host_field_module = mesh_coordinate_field.getFieldmodule()
         # root_region = self._model.get_context().getDefaultRegion()
@@ -469,7 +472,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                 conditional_field = client_field_module.createFieldLessThan(self._data_projection_error_field, tolerance_field)
 
                 selection_group = self._get_node_selection_group()
-                selection_group.addNodesConditional(conditional_field)
+                with ChangeManager(scene):
+                    selection_group.addNodesConditional(conditional_field)
 
         selection_mesh_group.removeAllElements()
         self._ui.pushButtonSelectPointsOnSurface.setEnabled(False)
