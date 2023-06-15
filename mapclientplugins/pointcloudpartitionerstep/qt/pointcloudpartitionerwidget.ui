@@ -58,6 +58,13 @@
             </widget>
            </item>
            <item>
+            <widget class="QPushButton" name="pushButtonDeleteGroup">
+             <property name="text">
+              <string>Delete Group</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <widget class="QPushButton" name="pushButtonAddToGroup">
              <property name="text">
               <string>Add Selected Points to Group</string>

@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'pointcloudpartitionerwidget.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.4.2
+## Created by: Qt User Interface Compiler version 6.5.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -57,6 +57,11 @@ class Ui_PointCloudPartitionerWidget(object):
         self.pushButtonCreateGroup.setObjectName(u"pushButtonCreateGroup")
 
         self.verticalLayout_4.addWidget(self.pushButtonCreateGroup)
+
+        self.pushButtonDeleteGroup = QPushButton(self.groupBox_2)
+        self.pushButtonDeleteGroup.setObjectName(u"pushButtonDeleteGroup")
+
+        self.verticalLayout_4.addWidget(self.pushButtonDeleteGroup)
 
         self.pushButtonAddToGroup = QPushButton(self.groupBox_2)
         self.pushButtonAddToGroup.setObjectName(u"pushButtonAddToGroup")
@@ -248,6 +253,7 @@ class Ui_PointCloudPartitionerWidget(object):
         self.groupBox.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Point Cloud Partitioner", None))
         self.groupBox_2.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Group Points", None))
         self.pushButtonCreateGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Create Group", None))
+        self.pushButtonDeleteGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Delete Group", None))
         self.pushButtonAddToGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Add Selected Points to Group", None))
         self.pushButtonRemoveFromGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Selected Points from Group", None))
         self.groupBox_7.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Field Chooser", None))
