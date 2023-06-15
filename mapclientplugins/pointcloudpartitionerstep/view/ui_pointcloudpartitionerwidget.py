@@ -149,6 +149,27 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.verticalLayout_7.addLayout(self.gridLayout_2)
 
+        self.gridLayout_4 = QGridLayout()
+        self.gridLayout_4.setObjectName(u"gridLayout_4")
+        self.labelTolerance = QLabel(self.groupBox_5)
+        self.labelTolerance.setObjectName(u"labelTolerance")
+        self.labelTolerance.setEnabled(False)
+
+        self.gridLayout_4.addWidget(self.labelTolerance, 0, 0, 1, 1)
+
+        self.doubleSpinBoxTolerance = QDoubleSpinBox(self.groupBox_5)
+        self.doubleSpinBoxTolerance.setObjectName(u"doubleSpinBoxTolerance")
+        self.doubleSpinBoxTolerance.setEnabled(False)
+        self.doubleSpinBoxTolerance.setDecimals(6)
+        self.doubleSpinBoxTolerance.setMaximum(99.999999000000003)
+        self.doubleSpinBoxTolerance.setSingleStep(0.000001000000000)
+        self.doubleSpinBoxTolerance.setValue(0.000010000000000)
+
+        self.gridLayout_4.addWidget(self.doubleSpinBoxTolerance, 0, 1, 1, 1)
+
+
+        self.verticalLayout_7.addLayout(self.gridLayout_4)
+
         self.pushButtonSelectPointsOnSurface = QPushButton(self.groupBox_5)
         self.pushButtonSelectPointsOnSurface.setObjectName(u"pushButtonSelectPointsOnSurface")
         self.pushButtonSelectPointsOnSurface.setEnabled(False)
@@ -262,6 +283,7 @@ class Ui_PointCloudPartitionerWidget(object):
         self.groupBox_5.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection", None))
         self.label_2.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection Mode:", None))
         self.label_3.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection Type:", None))
+        self.labelTolerance.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Surface-Point Tolerance:", None))
         self.pushButtonSelectPointsOnSurface.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Select Points on Surface", None))
         self.groupBox_6.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Visibility", None))
         self.checkBoxSurfacesVisibility.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Surfaces", None))

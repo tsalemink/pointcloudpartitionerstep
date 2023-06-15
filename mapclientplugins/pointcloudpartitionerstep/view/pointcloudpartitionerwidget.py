@@ -466,7 +466,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
                 self._data_projection_error_field = client_field_module.createFieldMagnitude(
                     self._data_projection_delta_coordinate_field)
-                tolerance_field = client_field_module.createFieldConstant(0.00001)
+                tolerance_value = self._ui.doubleSpinBoxTolerance.value()
+                tolerance_field = client_field_module.createFieldConstant(tolerance_value)
 
                 conditional_field = client_field_module.createFieldLessThan(self._data_projection_error_field, tolerance_field)
 
@@ -476,11 +477,15 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         selection_mesh_group.removeAllElements()
         self._ui.pushButtonSelectPointsOnSurface.setEnabled(False)
+        self._ui.labelTolerance.setEnabled(False)
+        self._ui.doubleSpinBoxTolerance.setEnabled(False)
 
     def _update_surface_selection(self):
         mesh_selection_group = self._get_mesh_selection_group()
         mesh_selected = True if mesh_selection_group.getSize() else False
         self._ui.pushButtonSelectPointsOnSurface.setEnabled(mesh_selected)
+        self._ui.labelTolerance.setEnabled(mesh_selected)
+        self._ui.doubleSpinBoxTolerance.setEnabled(mesh_selected)
 
         if mesh_selection_group:
             self._select_connected_mesh_elements(mesh_selection_group)
@@ -633,13 +638,16 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
             if "point_size" in settings:
                 self._ui.pointSizeSpinBox.setValue(settings["point_size"])
+            if "tolerance" in settings:
+                self._ui.doubleSpinBoxTolerance.setValue(settings["tolerance"])
 
     def _save_settings(self):
         if not os.path.exists(self._location):
             os.makedirs(self._location)
 
         settings = {
-            "point_size": self._ui.pointSizeSpinBox.value()
+            "point_size": self._ui.pointSizeSpinBox.value(),
+            "tolerance": self._ui.doubleSpinBoxTolerance.value()
         }
 
         with open(self._settings_file(), "w") as f:
