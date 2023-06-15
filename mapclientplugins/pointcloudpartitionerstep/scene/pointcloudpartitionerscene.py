@@ -106,6 +106,8 @@ class PointCloudPartitionerScene(object):
         if subgroup_field:
             graphic.setSubgroupField(subgroup_field)
             graphic.setMaterial(material)
+            if self._group_graphics_dict:
+                scene.moveGraphicsBefore(graphic, list(self._group_graphics_dict.values())[-1])
             self._group_graphics_dict[subgroup_field.getName()] = graphic
 
         attributes = graphic.getGraphicspointattributes()
