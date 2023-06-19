@@ -277,7 +277,7 @@ class Ui_PointCloudPartitionerWidget(object):
         self.pushButtonDeleteGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Delete Group", None))
         self.pushButtonAddToGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Add Selected Points to Group", None))
         self.pushButtonRemoveFromGroup.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Remove Selected Points from Group", None))
-        self.groupBox_7.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Field Chooser", None))
+        self.groupBox_7.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Coordinates", None))
         self.pointsFieldLabel.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Points Coordinates Field:", None))
         self.meshFieldLabel.setText(QCoreApplication.translate("PointCloudPartitionerWidget", u"Mesh Coordinates Field:", None))
         self.groupBox_5.setTitle(QCoreApplication.translate("PointCloudPartitionerWidget", u"Selection", None))

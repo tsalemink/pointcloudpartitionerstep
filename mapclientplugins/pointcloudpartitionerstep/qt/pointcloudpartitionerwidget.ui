@@ -84,7 +84,7 @@
         <item>
          <widget class="QGroupBox" name="groupBox_7">
           <property name="title">
-           <string>Field Chooser</string>
+           <string>Coordinates</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_8">
            <item>
