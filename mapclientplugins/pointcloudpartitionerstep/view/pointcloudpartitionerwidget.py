@@ -19,6 +19,7 @@ from cmlibs.zinc.material import Material
 from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwidget import Ui_PointCloudPartitionerWidget
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
 from mapclientplugins.pointcloudpartitionerstep.view.customsceneselection import CustomSceneSelection, MODE_MAP, TYPE_MAP
+from mapclientplugins.pointcloudpartitionerstep.model.pointcloudpartitionermodel import ALL_NODES_GROUP_NAME
 
 INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
 DEFAULT_STYLE_SHEET = ''
@@ -133,16 +134,18 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def _get_fields(self, field_module, field_list, include_nodes):
         field_iter = field_module.createFielditerator()
         field = field_iter.next()
+        node_points = field_module.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
         while field.isValid():
             print("field:", field.getName())
             if field.isTypeCoordinate() and (field.getNumberOfComponents() == 3) and (field.castFiniteElement().isValid()):
                 field_list.append(field.getName())
             node_group = field.castGroup()
             if include_nodes and node_group.isValid():
-                node_points = field_module.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
                 nodeset_group = node_group.getNodesetGroup(node_points)
                 # nodeset_group = field_node_group.createNodesetGroup(node_points)
-                if nodeset_group.isValid():
+                print("ssss:", nodeset_group.getName())
+                print("yyyy:", ALL_NODES_GROUP_NAME)
+                if nodeset_group.isValid() and field.getName() != ALL_NODES_GROUP_NAME:
                     print('add point group.')
                     self._add_point_group(node_group)
             field = field_iter.next()
