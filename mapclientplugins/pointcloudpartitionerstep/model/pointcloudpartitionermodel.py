@@ -39,9 +39,9 @@ class PointCloudPartitionerModel(object):
 
         points_field_module = self._points_region.getFieldmodule()
         nodes = points_field_module.findNodesetByName("nodes")
-        point_cloud_group_field = points_field_module.createFieldGroup()
-        point_cloud_group_field.setName(ALL_NODES_GROUP_NAME)
-        self._point_cloud_nodes = point_cloud_group_field.createNodesetGroup(nodes)
+        field_group = points_field_module.createFieldGroup()
+        field_group.setName(ALL_NODES_GROUP_NAME)
+        self._point_cloud_nodes = field_group.createNodesetGroup(nodes)
 
         surface_segmentation_field_module = self._surfaces_region.getFieldmodule()
         self._mesh = surface_segmentation_field_module.findMeshByDimension(2)

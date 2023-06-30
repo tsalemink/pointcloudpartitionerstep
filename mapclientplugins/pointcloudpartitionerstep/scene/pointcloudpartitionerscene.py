@@ -6,7 +6,6 @@ Created: April, 2023
 from cmlibs.zinc.field import Field
 from cmlibs.zinc.glyph import Glyph
 from cmlibs.zinc.graphics import Graphics
-from cmlibs.zinc.material import Material
 from cmlibs.zinc.scenecoordinatesystem import SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT
 
 from cmlibs.utils.zinc.field import create_field_finite_element
