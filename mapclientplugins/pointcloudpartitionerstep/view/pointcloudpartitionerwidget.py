@@ -25,6 +25,16 @@ INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
 DEFAULT_STYLE_SHEET = ''
 
 
+def _select_elements(field_module, mesh_selection_group, element_identifiers):
+    region = field_module.getRegion()
+    mesh = mesh_selection_group.getMasterMesh()
+
+    scene = region.getScene()
+    with ChangeManager(scene):
+        for element_identifier in element_identifiers:
+            mesh_selection_group.addElement(mesh.findElementByIdentifier(element_identifier))
+
+
 class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def __init__(self, model, parent=None):
@@ -477,15 +487,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         if mesh_selection_group is not None:
             self._select_connected_mesh_elements(mesh_selection_group)
 
-    def _select_elements(self, field_module, mesh_selection_group, element_identifiers):
-        region = field_module.getRegion()
-        mesh = mesh_selection_group.getMasterMesh()
-
-        scene = region.getScene()
-        with ChangeManager(scene):
-            for element_identifier in element_identifiers:
-                mesh_selection_group.addElement(mesh.findElementByIdentifier(element_identifier))
-
     def _select_connected_mesh_elements(self, mesh_selection_group):
         coordinate_field = self._model.get_mesh_coordinates()
         field_module = coordinate_field.getFieldmodule()
@@ -494,7 +495,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         if len(self._connected_sets):
             selected_elements = [_set for _set in self._connected_sets if initial_element_identifier in _set]
             if selected_elements:
-                self._select_elements(field_module, mesh_selection_group, selected_elements[0])
+                _select_elements(field_module, mesh_selection_group, selected_elements[0])
             return
 
         mesh = mesh_selection_group.getMasterMesh()
@@ -530,7 +531,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             el_ids.append(ids)
 
         self._connected_sets = el_ids
-        self._select_elements(field_module, mesh_selection_group, el_ids[0])
+        _select_elements(field_module, mesh_selection_group, el_ids[0])
 
     def _get_mesh_selection_group(self):
         mesh = self._model.get_mesh()
