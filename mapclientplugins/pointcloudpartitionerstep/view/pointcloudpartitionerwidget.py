@@ -10,7 +10,7 @@ import json
 from PySide6 import QtWidgets, QtCore
 
 from cmlibs.utils.zinc.general import ChangeManager
-from cmlibs.utils.zinc.scene import scene_get_or_create_selection_group
+from cmlibs.utils.zinc.scene import scene_get_or_create_selection_group, scene_get_selection_group
 from cmlibs.widgets.definitions import SELECTION_GROUP_NAME
 from cmlibs.widgets.handlers.scenemanipulation import SceneManipulation
 from cmlibs.zinc.field import Field, FieldFindMeshLocation
@@ -469,12 +469,12 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _update_surface_selection(self):
         mesh_selection_group = self._get_mesh_selection_group()
-        mesh_selected = True if mesh_selection_group.getSize() else False
+        mesh_selected = mesh_selection_group is not None and mesh_selection_group.getSize()
         self._ui.pushButtonSelectPointsOnSurface.setEnabled(mesh_selected)
         self._ui.labelTolerance.setEnabled(mesh_selected)
         self._ui.doubleSpinBoxTolerance.setEnabled(mesh_selected)
 
-        if mesh_selection_group:
+        if mesh_selection_group is not None:
             self._select_connected_mesh_elements(mesh_selection_group)
 
     def _select_elements(self, field_module, mesh_selection_group, element_identifiers):
@@ -535,9 +535,9 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def _get_mesh_selection_group(self):
         mesh = self._model.get_mesh()
         region = self._model.get_surfaces_region()
-        selection_group = scene_get_or_create_selection_group(region.getScene())
+        selection_group = scene_get_selection_group(region.getScene())
 
-        return selection_group.getMeshGroup(mesh)
+        return None if selection_group is None else selection_group.getMeshGroup(mesh)
 
     def _get_checked_group(self):
         checked_button = self._get_checked_button()
