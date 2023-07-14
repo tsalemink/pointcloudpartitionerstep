@@ -290,23 +290,20 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._scene.create_point_graphics(self._model.get_points_region().getScene(), self._model.get_point_cloud_coordinates(), group, material)
 
     def _update_node_graphics_subgroup(self):
-        only_one_group = None
-        multiple_groups = None
+        or_group = None
+        group_count = 0
         for group in self._point_group_dict.values():
-            if only_one_group is None and multiple_groups is None:
-                only_one_group = self._field_module.createFieldNot(group)
-                multiple_groups = group
+            group_count += 1
+            if group_count == 1:
+                or_group = group
             else:
-                only_one_group = None
-                multiple_groups = self._field_module.createFieldOr(group, multiple_groups)
+                or_group = self._field_module.createFieldOr(group, or_group)
 
-        if only_one_group is None and multiple_groups is None:
-            self._scene.set_node_graphics_subgroup_field(None)
-        elif only_one_group is None:
-            tmp = self._field_module.createFieldNot(multiple_groups)
-            self._scene.set_node_graphics_subgroup_field(tmp)
+        if group_count == 0:
+            self._scene.set_node_graphics_subgroup_field(or_group)
         else:
-            self._scene.set_node_graphics_subgroup_field(only_one_group)
+            tmp = self._field_module.createFieldNot(or_group)
+            self._scene.set_node_graphics_subgroup_field(tmp)
 
     def _remove_associated_point_group(self):
         check_button = self._get_checked_button()
