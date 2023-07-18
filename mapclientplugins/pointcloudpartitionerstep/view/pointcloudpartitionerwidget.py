@@ -10,14 +10,12 @@ import json
 from PySide6 import QtWidgets, QtCore
 
 from cmlibs.utils.zinc.general import ChangeManager
-from cmlibs.utils.zinc.scene import scene_get_or_create_selection_group, scene_get_selection_group
-from cmlibs.widgets.definitions import SELECTION_GROUP_NAME
+from cmlibs.utils.zinc.scene import scene_get_or_create_selection_group
 from cmlibs.widgets.handlers.scenemanipulation import SceneManipulation
-from cmlibs.zinc.field import Field, FieldFindMeshLocation
+from cmlibs.zinc.field import FieldFindMeshLocation
 from cmlibs.zinc.material import Material
 
 from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwidget import Ui_PointCloudPartitionerWidget
-from mapclientplugins.pointcloudpartitionerstep.model.pointcloudpartitionermodel import ALL_NODES_GROUP_NAME
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
 from mapclientplugins.pointcloudpartitionerstep.view.customsceneselection import CustomSceneSelection, MODE_MAP, TYPE_MAP
 
@@ -129,6 +127,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def load(self, points_file_location, surfaces_file_location):
         self._model.load(points_file_location, surfaces_file_location)
+        self._field_module = self._model.get_points_region().getFieldmodule()
         self._scene.setup_visualisation()
 
         self._get_regions_fields(self._model.get_points_region(), self._points_field_list, True)
@@ -137,19 +136,19 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._setup_field_combo_boxes()
 
     def _get_regions_fields(self, region, field_list, include_nodes):
-        self._field_module = region.getFieldmodule()
-        self._get_fields(self._field_module, field_list, include_nodes)
+        field_module = region.getFieldmodule()
+        self._get_fields(field_module, field_list, include_nodes)
 
     def _get_fields(self, field_module, field_list, include_nodes):
         field_iter = field_module.createFielditerator()
         field = field_iter.next()
-        node_points = field_module.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
+        # node_points = field_module.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_NODES)
         while field.isValid():
             if field.isTypeCoordinate() and (field.getNumberOfComponents() == 3) and (field.castFiniteElement().isValid()):
                 field_list.append(field.getName())
             node_group = field.castGroup()
-            if include_nodes and node_group.isValid() and field.getName() != ALL_NODES_GROUP_NAME:
-                nodeset_group = node_group.getNodesetGroup(node_points)
+            if include_nodes and node_group.isValid():
+                nodeset_group = node_group.getNodesetGroup(self._model.get_nodes())
                 if nodeset_group.isValid():
                     self._add_point_group(node_group)
             field = field_iter.next()
@@ -297,7 +296,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             if group_count == 1:
                 or_group = group
             else:
-                or_group = self._field_module.createFieldOr(group, or_group)
+                or_group = self._field_module.createFieldOr(or_group, group)
 
         if group_count == 0:
             self._scene.set_node_graphics_subgroup_field(or_group)
@@ -366,8 +365,9 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         if not nodeset_group:
             return
 
-        selection_group = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
+        # selection_group = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
+        # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
+        selected_nodeset_group = self._get_node_selection_group()
         scene = self._field_module.getRegion().getScene()
         with ChangeManager(scene):
             node_iter = nodeset_group.createNodeiterator()
@@ -377,8 +377,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                 node = node_iter.next()
 
     def _add_points_to_group(self):
-        selection_group = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
+        # selection_group = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
+        # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
         checked_group = self._get_checked_group()
         nodeset_group = self._get_checked_nodeset_group(checked_group)
         if not nodeset_group.isValid():
@@ -386,6 +386,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         # Add the selected Nodes to the chosen Group.
         scene = self._field_module.getRegion().getScene()
+        selection_group = scene.getSelectionField().castGroup()
+        selected_nodeset_group = self._get_node_selection_group()
         with ChangeManager(scene):
             node_iter = selected_nodeset_group.createNodeiterator()
             node = node_iter.next()
@@ -396,8 +398,9 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             selection_group.clear()
 
     def _remove_selected_points_from_group(self):
-        selection_group = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
+        selection_group = self._model.get_point_selection_group()  # self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
+        # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
+        selected_nodeset_group = self._get_node_selection_group()
         checked_button = self._get_checked_button()
         self._remove_points_from_group(checked_button, selection_group, selected_nodeset_group)
 
@@ -461,13 +464,13 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
             conditional_field = client_field_module.createFieldLessThan(self._data_projection_error_field, tolerance_field)
 
-            selection_group = scene_get_or_create_selection_group(scene)
-            selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
-            if not selected_nodeset_group.isValid():
-                selected_nodeset_group = selection_group.createNodesetGroup(self._model.get_nodes())
+            selection_group = self._get_node_selection_group()  # scene_get_or_create_selection_group(scene)
+            # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
+            # if not selected_nodeset_group.isValid():
+            #     selected_nodeset_group = selection_group.createNodesetGroup(self._model.get_nodes())
 
             with ChangeManager(scene):
-                selected_nodeset_group.addNodesConditional(conditional_field)
+                selection_group.addNodesConditional(conditional_field)
 
         selection_mesh_group.removeAllElements()
         self._ui.pushButtonSelectPointsOnSurface.setEnabled(False)
@@ -481,7 +484,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.labelTolerance.setEnabled(mesh_selected)
         self._ui.doubleSpinBoxTolerance.setEnabled(mesh_selected)
 
-        if mesh_selection_group is not None:
+        if mesh_selected:
             self._select_connected_mesh_elements(mesh_selection_group)
 
     def _select_connected_mesh_elements(self, mesh_selection_group):
@@ -530,12 +533,14 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._connected_sets = el_ids
         _select_elements(field_module, mesh_selection_group, el_ids[0])
 
-    def _get_mesh_selection_group(self):
-        mesh = self._model.get_mesh()
-        region = self._model.get_surfaces_region()
-        selection_group = scene_get_selection_group(region.getScene())
+    def _get_node_selection_group(self):
+        selection_field = self._model.get_point_selection_group()
+        return selection_field.getOrCreateNodesetGroup(self._model.get_nodes())
 
-        return None if selection_group is None else selection_group.getMeshGroup(mesh)
+    def _get_mesh_selection_group(self):
+        region = self._model.get_surfaces_region()
+        selection_field = scene_get_or_create_selection_group(region.getScene())
+        return selection_field.getMeshGroup(self._model.get_mesh())
 
     def _get_checked_group(self):
         checked_button = self._get_checked_button()
@@ -545,11 +550,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         if checked_group is None:
             return None
 
-        field_node_group = checked_group.getNodesetGroup(self._model.get_nodes())
-        if not field_node_group.isValid():
-            field_node_group = checked_group.createNodesetGroup(self._model.get_nodes())
-
-        return field_node_group
+        return checked_group.getOrCreateNodesetGroup(self._model.get_nodes())
 
     def _get_checked_button(self):
         checked_button = self._button_group.checkedButton()
@@ -602,7 +603,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             group.setName(line_edit.text())
 
     def _clear_selection_group(self):
-        selection_field = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
+        scene = self._model.get_points_region().getScene()
+        selection_field = scene.getSelectionField().castGroup()
         selection_field.clear()
 
     def load_settings(self):

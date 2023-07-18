@@ -3,6 +3,7 @@ Created: April, 2023
 
 @author: tsalemink
 """
+from cmlibs.utils.zinc.general import ChangeManager
 from cmlibs.zinc.field import Field
 from cmlibs.zinc.glyph import Glyph
 from cmlibs.zinc.graphics import Graphics
@@ -93,27 +94,25 @@ class PointCloudPartitionerScene(object):
         self._label_graphics = _create_text_graphics(normalised_scene, normalised_coordinate_field)
 
     def create_point_graphics(self, scene, finite_element_field, subgroup_field, material, mode=Graphics.SELECT_MODE_DRAW_UNSELECTED):
-        scene.beginChange()
-        graphic = scene.createGraphicsPoints()
-        graphic.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
+        with ChangeManager(scene):
+            graphic = scene.createGraphicsPoints()
+            graphic.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
 
-        if finite_element_field:
-            graphic.setCoordinateField(finite_element_field)
+            if finite_element_field:
+                graphic.setCoordinateField(finite_element_field)
 
-        graphic.setSelectMode(mode)
+            graphic.setSelectMode(mode)
 
-        if subgroup_field:
-            graphic.setSubgroupField(subgroup_field)
-            graphic.setMaterial(material)
-            if self._group_graphics_dict:
-                scene.moveGraphicsBefore(graphic, list(self._group_graphics_dict.values())[-1])
-            self._group_graphics_dict[subgroup_field.getName()] = graphic
+            if subgroup_field:
+                graphic.setSubgroupField(subgroup_field)
+                graphic.setMaterial(material)
+                if self._group_graphics_dict:
+                    scene.moveGraphicsBefore(graphic, list(self._group_graphics_dict.values())[-1])
+                self._group_graphics_dict[subgroup_field.getName()] = graphic
 
-        attributes = graphic.getGraphicspointattributes()
-        attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_SPHERE)
-        _set_graphic_point_size(graphic, self._data_point_base_size * self._pixel_scale)
-
-        scene.endChange()
+            attributes = graphic.getGraphicspointattributes()
+            attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_SPHERE)
+            _set_graphic_point_size(graphic, self._data_point_base_size * self._pixel_scale)
 
         return graphic
 
@@ -121,6 +120,8 @@ class PointCloudPartitionerScene(object):
         coordinate_field = self._model.get_point_cloud_coordinates()
         self._node_graphics.setCoordinateField(coordinate_field)
         self._selection_graphics.setCoordinateField(coordinate_field)
+        for graphic in self._group_graphics_dict.values():
+            graphic.setCoordinateField(coordinate_field)
 
     def update_mesh_coordinates(self):
         coordinate_field = self._model.get_mesh_coordinates()
