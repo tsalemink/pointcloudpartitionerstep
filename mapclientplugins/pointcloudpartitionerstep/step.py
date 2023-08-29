@@ -62,7 +62,6 @@ class PointCloudPartitionerStep(WorkflowStepMountPoint):
         self._view.set_location(os.path.join(self._location, self._config['identifier']))
         self._view.clear()
         self._view.load(self._source_points, self._segmentation_surface)
-        self._view.load_settings()
         self._setCurrentWidget(self._view)
 
     def _my_done_execution(self):

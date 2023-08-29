@@ -6,6 +6,7 @@ Created: April, 2023
 import colorsys
 import os
 import json
+import hashlib
 
 from PySide6 import QtWidgets, QtCore
 
@@ -33,6 +34,17 @@ def _select_elements(field_module, mesh_selection_group, element_identifiers):
             mesh_selection_group.addElement(mesh.findElementByIdentifier(element_identifier))
 
 
+def _generate_hash(filename, block_size=2 ** 20):
+    md5 = hashlib.md5()
+    with open(filename, "rb") as f:
+        while True:
+            data = f.read(block_size)
+            if not data:
+                break
+            md5.update(data)
+    return md5.hexdigest()
+
+
 class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def __init__(self, model, parent=None):
@@ -44,6 +56,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         self._callback = None
         self._location = None
+        self._input_hash = None
 
         self._model = model
         self._scene = PointCloudPartitionerScene(model)
@@ -126,9 +139,14 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pointSizeSpinBox.setValue(self._scene.get_point_size())
 
     def load(self, points_file_location, surfaces_file_location):
-        self._model.load(points_file_location, surfaces_file_location)
         self._field_module = self._model.get_points_region().getFieldmodule()
         self._scene.setup_visualisation()
+
+        previous_hash = self._load_settings()
+        self._input_hash = _generate_hash(points_file_location)
+        if self._input_hash == previous_hash:
+            points_file_location = self.get_output_file()
+        self._model.load(points_file_location, surfaces_file_location)
 
         self._get_regions_fields(self._model.get_points_region(), self._points_field_list, True)
         self._get_regions_fields(self._model.get_surfaces_region(), self._surfaces_field_list, False)
@@ -607,7 +625,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         selection_field = scene.getSelectionField().castGroup()
         selection_field.clear()
 
-    def load_settings(self):
+    def _load_settings(self):
         if os.path.isfile(self._settings_file()):
             with open(self._settings_file()) as f:
                 settings = json.load(f)
@@ -617,11 +635,17 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             if "tolerance" in settings:
                 self._ui.doubleSpinBoxTolerance.setValue(settings["tolerance"])
 
+            if "input_hash" in settings:
+                return settings["input_hash"]
+            else:
+                return None
+
     def _save_settings(self):
         if not os.path.exists(self._location):
             os.makedirs(self._location)
 
         settings = {
+            "input_hash": self._input_hash,
             "point_size": self._ui.pointSizeSpinBox.value(),
             "tolerance": self._ui.doubleSpinBoxTolerance.value()
         }
