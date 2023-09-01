@@ -9,6 +9,10 @@ import json
 
 from PySide6 import QtWidgets, QtCore
 
+# TODO: Check.
+from cmlibs.zinc.field import Field
+from cmlibs.zinc.result import RESULT_OK
+
 from cmlibs.utils.zinc.general import ChangeManager
 from cmlibs.utils.zinc.scene import scene_get_or_create_selection_group
 from cmlibs.widgets.handlers.scenemanipulation import SceneManipulation
@@ -49,10 +53,18 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._scene = PointCloudPartitionerScene(model)
         self._selection_handler = CustomSceneSelection(QtCore.Qt.Key.Key_S)
         self._field_module = None
+        # TODO: Why is this never used???
+        #   Was it removed in a previous commit...???
+        #   Yeah...
         self._stored_mesh_location_field = None
         self._points_field_list = ["---"]
         self._surfaces_field_list = ["---"]
         self._connected_sets = []
+
+        # TODO: ???
+        self._find_host_coordinates = None
+        # TODO: ???
+        self._coordinate_arg = None
 
         self._check_box_dict = {}  # Key is LineEdit, value is CheckBox.
         self._horizontal_layout_dict = {}  # Key is CheckBox, value is Layout
@@ -433,6 +445,11 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         scene_filter = scene_filter_module.createScenefilterFieldDomainType(selection_type)
         self._selection_handler.set_scene_filter(scene_filter)
 
+    # TODO: Implement.
+    def _create_stored_mesh_location(self):
+        pass
+
+    # TODO: Convert to stored mesh location field.
     def _select_points_on_surface(self):
         point_coordinate_field = self._model.get_point_cloud_coordinates()
         mesh_coordinate_field = self._model.get_mesh_coordinates()
@@ -444,18 +461,80 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         client_field_module = point_coordinate_field.getFieldmodule()
         host_field_module = mesh_coordinate_field.getFieldmodule()
 
+        # TODO: Create FieldStoredMeshLocation.
+        mesh = selection_mesh_group.getMasterMesh()
+        if self._stored_mesh_location_field is None:
+            self._stored_mesh_location_field = host_field_module.createFieldStoredMeshLocation(mesh)
+            self._stored_mesh_location_field.setName('stored_location')
+            if not self._stored_mesh_location_field.isValid():
+                self._stored_mesh_location_field = None
+                raise ValueError('Failed to create stored mesh location field.')
+
         with ChangeManager(host_field_module), ChangeManager(client_field_module):
             coordinate_arg = host_field_module.createFieldArgumentReal(3)
-            find_host_coordinates = host_field_module.createFieldFindMeshLocation(coordinate_arg, mesh_coordinate_field, selection_mesh_group)
+            # TODO: Use whole mesh instaead of selection mesh group.
+            # find_host_coordinates = host_field_module.createFieldFindMeshLocation(coordinate_arg, mesh_coordinate_field, selection_mesh_group)
+            find_host_coordinates = host_field_module.createFieldFindMeshLocation(coordinate_arg, mesh_coordinate_field, mesh)
             find_host_coordinates.setSearchMode(FieldFindMeshLocation.SEARCH_MODE_NEAREST)
+            # TODO: Use stored-mesh-location for host-coordinates.
             host_coordinates = host_field_module.createFieldEmbedded(mesh_coordinate_field, find_host_coordinates)
+            # host_coordinates = host_field_module.createFieldEmbedded(mesh_coordinate_field, self._stored_mesh_location_field)
 
             apply_host_coordinates = client_field_module.createFieldApply(host_coordinates)
             apply_host_coordinates.setBindArgumentSourceField(coordinate_arg, point_coordinate_field)
 
+            # TODO: Replace with node iterator...?
+            # with ChangeManager(scene):
+            #     selection_group.addNodesConditional(conditional_field)
+            node_iterator = self._model.get_nodes().createNodeiterator()
+            node_template = self._model.get_nodes().createNodetemplate()
+            node_template.defineField(self._stored_mesh_location_field)
+            cache = client_field_module.createFieldcache()
+            node = node_iterator.next()
+            while node.isValid():
+                cache.setNode(node)
+                # element, xi = find_host_coordinates.evaluateMeshLocation(cache, mesh.getDimension())
+                element, xi = apply_host_coordinates.evaluateMeshLocation(cache, mesh.getDimension())
+                if node.getIdentifier() < 10:
+                    print("element, xi", element.isValid(), xi)
+                if element.isValid():
+                    node.merge(node_template)
+                    result = self._stored_mesh_location_field.assignMeshLocation(cache, element, xi)
+                    print(result)
+                    print(result.isValid())
+                    if result != RESULT_OK:
+                        print("Something went wrong.")
+                    # _, error = self._data_projection_error_field.evaluateReal(cache, 3)
+                    # if error[0] < 0.00001:
+                    #     selection_group.addNode(node)
+                node = node_iterator.next()
+            # TODO: Do field assignment in separate loop.
+            #   Remove findmeshlocation once storemesh is
+
+            selection_group = self._get_node_selection_group()  # scene_get_or_create_selection_group(scene)
+            # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
+            # if not selected_nodeset_group.isValid():
+            #     selected_nodeset_group = selection_group.createNodesetGroup(self._model.get_nodes())
+
+            # node_iterator = self._model.get_nodes().createNodeiterator()
+            # node = node_iterator.next()
+            # while node.isValid():
+            #     _, error = self._data_projection_error_field.evaluateReal(cache, 3)
+            #     if error[0] < 0.00001:
+            #         selection_group.addNode(node)
+            #     node = node_iterator.next()
+
+            # embedded_field = host_field_module.createFieldEmbedded(selection_mesh_group.getFieldGroup(), self._stored_mesh_location_field)
+            # print("embedded_field")
+            # print(embedded_field.isValid())
+            # print(self._stored_mesh_location_field.isValid())
+            # print(selection_mesh_group.getFieldGroup())
+            # print(selection_mesh_group.getFieldGroup().isValid())
+
             self._data_projection_delta_coordinate_field = client_field_module.createFieldSubtract(
                 point_coordinate_field,
                 apply_host_coordinates)
+                # embedded_field)
 
             self._data_projection_error_field = client_field_module.createFieldMagnitude(
                 self._data_projection_delta_coordinate_field)
@@ -464,18 +543,70 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
             conditional_field = client_field_module.createFieldLessThan(self._data_projection_error_field, tolerance_field)
 
-            selection_group = self._get_node_selection_group()  # scene_get_or_create_selection_group(scene)
-            # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
-            # if not selected_nodeset_group.isValid():
-            #     selected_nodeset_group = selection_group.createNodesetGroup(self._model.get_nodes())
-
-            with ChangeManager(scene):
-                selection_group.addNodesConditional(conditional_field)
+            selection_group.addNodesConditional(conditional_field)
 
         selection_mesh_group.removeAllElements()
         self._ui.pushButtonSelectPointsOnSurface.setEnabled(False)
         self._ui.labelTolerance.setEnabled(False)
         self._ui.doubleSpinBoxTolerance.setEnabled(False)
+
+        # TODO: Attempt 2.
+        # point_coordinate_field = self._model.get_point_cloud_coordinates()
+        # mesh_coordinate_field = self._model.get_mesh_coordinates()
+        # mesh_selection_group = self._get_mesh_selection_group()
+        # mesh = mesh_selection_group.getMasterMesh()
+        #
+        # client_field_module = point_coordinate_field.getFieldmodule()
+        # host_field_module = mesh_coordinate_field.getFieldmodule()
+        #
+        # point_cloud_nodes = self._model.get_nodes()
+        # node_iterator = point_cloud_nodes.createNodeiterator()
+        #
+        # # TODO: Create FieldFindMeshLocation.
+        # coordinate_arg = host_field_module.createFieldArgumentReal(3)
+        # find_host_coordinates = host_field_module.createFieldFindMeshLocation(coordinate_arg, mesh_coordinate_field, mesh_selection_group)
+        # find_host_coordinates.setSearchMode(FieldFindMeshLocation.SEARCH_MODE_NEAREST)
+        #
+        # # TODO: Create FieldStoredMeshLocation.
+        # if self._stored_mesh_location_field is None:
+        #     self._stored_mesh_location_field = host_field_module.createFieldStoredMeshLocation(mesh)
+        #     self._stored_mesh_location_field.setName('stored_location')
+        #     if not self._stored_mesh_location_field.isValid():
+        #         self._stored_mesh_location_field = None
+        #         raise ValueError('Failed to create stored mesh location field.')
+        #
+        # with ChangeManager(client_field_module) and ChangeManager(host_field_module):
+        #     host_coordinates = host_field_module.createFieldEmbedded(mesh_coordinate_field, self._stored_mesh_location_field)
+        #     apply_host_coordinates = client_field_module.createFieldApply(host_coordinates)
+        #     apply_host_coordinates.setBindArgumentSourceField(coordinate_arg, point_coordinate_field)
+        #     self._data_projection_delta_coordinate_field = client_field_module.createFieldSubtract(
+        #         point_coordinate_field,
+        #         apply_host_coordinates)
+        #     self._data_projection_error_field = client_field_module.createFieldMagnitude(
+        #         self._data_projection_delta_coordinate_field)
+        #
+        #     # TODO: Try use addNodesConditional...?
+        #     node_template = self._model.get_nodes().createNodetemplate()
+        #     node_template.defineField(self._stored_mesh_location_field)
+        #     selection_group = self._get_node_selection_group()
+        #     cache = client_field_module.createFieldcache()
+        #     node = node_iterator.next()
+        #     while node.isValid():
+        #         cache.setNode(node)
+        #         element, xi = find_host_coordinates.evaluateMeshLocation(cache, mesh.getDimension())
+        #         if element.isValid():
+        #             node.merge(node_template)
+        #             result = self._stored_mesh_location_field.assignMeshLocation(cache, element, xi)
+        #             if result != RESULT_OK:
+        #                 print("Something went wrong.")
+        #             _, error = self._data_projection_error_field.evaluateReal(cache, 3)
+        #             if error[0] < 0.00001:
+        #                 selection_group.addNode(node)
+        #         node = node_iterator.next()
+
+        # TODO: REMOVE:
+        #   Current implementation: ~80s(right-horn), ~64s(left-horn), ~50s(outer).
+        print("Done.")
 
     def _update_surface_selection(self):
         mesh_selection_group = self._get_mesh_selection_group()
@@ -537,6 +668,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         selection_field = self._model.get_point_selection_group()
         return selection_field.getOrCreateNodesetGroup(self._model.get_nodes())
 
+    # TODO; Why is this not returning the same object each time...??????
     def _get_mesh_selection_group(self):
         region = self._model.get_surfaces_region()
         selection_field = scene_get_or_create_selection_group(region.getScene())

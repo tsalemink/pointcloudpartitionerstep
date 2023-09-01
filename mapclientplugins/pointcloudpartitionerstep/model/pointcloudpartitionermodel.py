@@ -22,10 +22,17 @@ class PointCloudPartitionerModel(object):
         self._label_region = root_region.createChild("label")
         self._surfaces_region = root_region.createChild("surfaces")
 
+        # TODO: Try this...
+        self._root_region = root_region
+
         self.define_standard_materials()
         self.define_standard_glyphs()
 
         self._selection_filter = self._create_selection_filter()
+
+    # TODO: ???
+    def get_root_region(self):
+        return self._root_region
 
     def get_selection_filter(self):
         return self._selection_filter
