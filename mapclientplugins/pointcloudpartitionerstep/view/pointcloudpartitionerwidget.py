@@ -8,20 +8,21 @@ import os
 import json
 
 from PySide6 import QtWidgets, QtCore
-
-# TODO: Check.
-from cmlibs.zinc.field import Field
-from cmlibs.zinc.result import RESULT_OK
+from cmlibs.utils.zinc.finiteelement import get_identifiers
 
 from cmlibs.utils.zinc.general import ChangeManager
+from cmlibs.utils.zinc.region import copy_nodeset
 from cmlibs.utils.zinc.scene import scene_get_or_create_selection_group
 from cmlibs.widgets.handlers.scenemanipulation import SceneManipulation
+from cmlibs.zinc.field import Field
 from cmlibs.zinc.field import FieldFindMeshLocation
 from cmlibs.zinc.material import Material
 
 from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwidget import Ui_PointCloudPartitionerWidget
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
 from mapclientplugins.pointcloudpartitionerstep.view.customsceneselection import CustomSceneSelection, MODE_MAP, TYPE_MAP
+
+import time
 
 INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
 DEFAULT_STYLE_SHEET = ''
@@ -56,7 +57,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         # TODO: Why is this never used???
         #   Was it removed in a previous commit...???
         #   Yeah...
-        self._stored_mesh_location_field = None
+        self._connected_set_index_field = None
         self._points_field_list = ["---"]
         self._surfaces_field_list = ["---"]
         self._connected_sets = []
@@ -160,7 +161,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                 field_list.append(field.getName())
             node_group = field.castGroup()
             if include_nodes and node_group.isValid():
-                nodeset_group = node_group.getNodesetGroup(self._model.get_nodes())
+                nodeset_group = node_group.getNodesetGroup(self._model.get_data_points())
                 if nodeset_group.isValid():
                     self._add_point_group(node_group)
             field = field_iter.next()
@@ -445,168 +446,107 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         scene_filter = scene_filter_module.createScenefilterFieldDomainType(selection_type)
         self._selection_handler.set_scene_filter(scene_filter)
 
-    # TODO: Implement.
-    def _create_stored_mesh_location(self):
-        pass
+    def _connected_set_index(self, element_id):
+        for index, connected_set in enumerate(self._connected_sets):
+            if element_id in connected_set:
+                return index
+
+        return -1
 
     # TODO: Convert to stored mesh location field.
     def _select_points_on_surface(self):
-        point_coordinate_field = self._model.get_point_cloud_coordinates()
-        mesh_coordinate_field = self._model.get_mesh_coordinates()
         selection_mesh_group = self._get_mesh_selection_group()
+        point_coordinate_field = self._model.get_point_cloud_coordinates()
+        point_field_module = point_coordinate_field.getFieldmodule()
 
-        points_region = self._model.get_points_region()
-        scene = points_region.getScene()
+        if self._connected_set_index_field is None:
+            mesh_coordinate_field = self._model.get_mesh_coordinates()
 
-        client_field_module = point_coordinate_field.getFieldmodule()
-        host_field_module = mesh_coordinate_field.getFieldmodule()
+            mesh_region = self._model.get_surfaces_region()
 
-        # TODO: Create FieldStoredMeshLocation.
-        mesh = selection_mesh_group.getMasterMesh()
-        if self._stored_mesh_location_field is None:
-            self._stored_mesh_location_field = host_field_module.createFieldStoredMeshLocation(mesh)
-            self._stored_mesh_location_field.setName('stored_location')
-            if not self._stored_mesh_location_field.isValid():
-                self._stored_mesh_location_field = None
-                raise ValueError('Failed to create stored mesh location field.')
+            mesh_field_module = mesh_coordinate_field.getFieldmodule()
 
-        with ChangeManager(host_field_module), ChangeManager(client_field_module):
-            coordinate_arg = host_field_module.createFieldArgumentReal(3)
-            # TODO: Use whole mesh instaead of selection mesh group.
-            # find_host_coordinates = host_field_module.createFieldFindMeshLocation(coordinate_arg, mesh_coordinate_field, selection_mesh_group)
-            find_host_coordinates = host_field_module.createFieldFindMeshLocation(coordinate_arg, mesh_coordinate_field, mesh)
-            find_host_coordinates.setSearchMode(FieldFindMeshLocation.SEARCH_MODE_NEAREST)
-            # TODO: Use stored-mesh-location for host-coordinates.
-            host_coordinates = host_field_module.createFieldEmbedded(mesh_coordinate_field, find_host_coordinates)
-            # host_coordinates = host_field_module.createFieldEmbedded(mesh_coordinate_field, self._stored_mesh_location_field)
+            mesh2d = mesh_field_module.findMeshByDimension(2)
 
-            apply_host_coordinates = client_field_module.createFieldApply(host_coordinates)
-            apply_host_coordinates.setBindArgumentSourceField(coordinate_arg, point_coordinate_field)
+            # Transfer datapoints over to mesh region.
+            data_points = self._model.get_data_points()
+            copy_nodeset(mesh_region, data_points)
+            copied_data_points = mesh_field_module.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_DATAPOINTS)
 
-            # TODO: Replace with node iterator...?
-            # with ChangeManager(scene):
-            #     selection_group.addNodesConditional(conditional_field)
-            node_iterator = self._model.get_nodes().createNodeiterator()
-            node_template = self._model.get_nodes().createNodetemplate()
-            node_template.defineField(self._stored_mesh_location_field)
-            cache = client_field_module.createFieldcache()
-            node = node_iterator.next()
-            while node.isValid():
-                cache.setNode(node)
-                # element, xi = find_host_coordinates.evaluateMeshLocation(cache, mesh.getDimension())
-                element, xi = apply_host_coordinates.evaluateMeshLocation(cache, mesh.getDimension())
-                if node.getIdentifier() < 10:
-                    print("element, xi", element.isValid(), xi)
-                if element.isValid():
-                    node.merge(node_template)
-                    result = self._stored_mesh_location_field.assignMeshLocation(cache, element, xi)
-                    print(result)
-                    print(result.isValid())
-                    if result != RESULT_OK:
-                        print("Something went wrong.")
-                    # _, error = self._data_projection_error_field.evaluateReal(cache, 3)
-                    # if error[0] < 0.00001:
-                    #     selection_group.addNode(node)
-                node = node_iterator.next()
-            # TODO: Do field assignment in separate loop.
-            #   Remove findmeshlocation once storemesh is
+            progress = QtWidgets.QProgressDialog("Calculating locations ...", "Abort Calculation", 0, copied_data_points.getSize(), self)
+            progress.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
 
-            selection_group = self._get_node_selection_group()  # scene_get_or_create_selection_group(scene)
-            # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
-            # if not selected_nodeset_group.isValid():
-            #     selected_nodeset_group = selection_group.createNodesetGroup(self._model.get_nodes())
+            with ChangeManager(mesh_field_module), ChangeManager(point_field_module):
+                self._connected_set_index_field = point_field_module.createFieldFiniteElement(1)
+                find_host_coordinates = mesh_field_module.createFieldFindMeshLocation(mesh_coordinate_field, mesh_coordinate_field, mesh2d)
+                find_host_coordinates.setSearchMode(FieldFindMeshLocation.SEARCH_MODE_NEAREST)
+                host_coordinates = mesh_field_module.createFieldEmbedded(mesh_coordinate_field, find_host_coordinates)
 
-            # node_iterator = self._model.get_nodes().createNodeiterator()
-            # node = node_iterator.next()
-            # while node.isValid():
-            #     _, error = self._data_projection_error_field.evaluateReal(cache, 3)
-            #     if error[0] < 0.00001:
-            #         selection_group.addNode(node)
-            #     node = node_iterator.next()
+                data_projection_delta_coordinate_field = mesh_field_module.createFieldSubtract(
+                            mesh_coordinate_field,
+                            host_coordinates)
+                data_projection_error_field = mesh_field_module.createFieldMagnitude(
+                            data_projection_delta_coordinate_field)
+                tolerance_value = self._ui.doubleSpinBoxTolerance.value()
+                tolerance_field = mesh_field_module.createFieldConstant(tolerance_value)
 
-            # embedded_field = host_field_module.createFieldEmbedded(selection_mesh_group.getFieldGroup(), self._stored_mesh_location_field)
-            # print("embedded_field")
-            # print(embedded_field.isValid())
-            # print(self._stored_mesh_location_field.isValid())
-            # print(selection_mesh_group.getFieldGroup())
-            # print(selection_mesh_group.getFieldGroup().isValid())
+                conditional_field = mesh_field_module.createFieldLessThan(data_projection_error_field, tolerance_field)
 
-            self._data_projection_delta_coordinate_field = client_field_module.createFieldSubtract(
-                point_coordinate_field,
-                apply_host_coordinates)
-                # embedded_field)
+                point_cache = point_field_module.createFieldcache()
 
-            self._data_projection_error_field = client_field_module.createFieldMagnitude(
-                self._data_projection_delta_coordinate_field)
-            tolerance_value = self._ui.doubleSpinBoxTolerance.value()
-            tolerance_field = client_field_module.createFieldConstant(tolerance_value)
+                datapoint_template = data_points.createNodetemplate()
+                datapoint_template.defineField(self._connected_set_index_field)
 
-            conditional_field = client_field_module.createFieldLessThan(self._data_projection_error_field, tolerance_field)
+                identifiers = get_identifiers(copied_data_points)
+                divisions = 1
+                chunk_size = len(identifiers) // divisions
+                split_identifiers = [identifiers[i * chunk_size: (i + 1) * chunk_size] for i in range(divisions)]
+                remainder = identifiers[divisions*chunk_size:]
+                if remainder:
+                    split_identifiers.append(remainder)
 
-            selection_group.addNodesConditional(conditional_field)
+                cancelled = False
+                count = 0
 
-        selection_mesh_group.removeAllElements()
-        self._ui.pushButtonSelectPointsOnSurface.setEnabled(False)
-        self._ui.labelTolerance.setEnabled(False)
-        self._ui.doubleSpinBoxTolerance.setEnabled(False)
+                mesh_cache = mesh_field_module.createFieldcache()
+                for identifier in identifiers:
+                    datapoint = copied_data_points.findNodeByIdentifier(identifier)
+                    element_identifier, value = _find_datapoint_location(mesh_cache, conditional_field, find_host_coordinates, datapoint)
 
-        # TODO: Attempt 2.
-        # point_coordinate_field = self._model.get_point_cloud_coordinates()
-        # mesh_coordinate_field = self._model.get_mesh_coordinates()
-        # mesh_selection_group = self._get_mesh_selection_group()
-        # mesh = mesh_selection_group.getMasterMesh()
-        #
-        # client_field_module = point_coordinate_field.getFieldmodule()
-        # host_field_module = mesh_coordinate_field.getFieldmodule()
-        #
-        # point_cloud_nodes = self._model.get_nodes()
-        # node_iterator = point_cloud_nodes.createNodeiterator()
-        #
-        # # TODO: Create FieldFindMeshLocation.
-        # coordinate_arg = host_field_module.createFieldArgumentReal(3)
-        # find_host_coordinates = host_field_module.createFieldFindMeshLocation(coordinate_arg, mesh_coordinate_field, mesh_selection_group)
-        # find_host_coordinates.setSearchMode(FieldFindMeshLocation.SEARCH_MODE_NEAREST)
-        #
-        # # TODO: Create FieldStoredMeshLocation.
-        # if self._stored_mesh_location_field is None:
-        #     self._stored_mesh_location_field = host_field_module.createFieldStoredMeshLocation(mesh)
-        #     self._stored_mesh_location_field.setName('stored_location')
-        #     if not self._stored_mesh_location_field.isValid():
-        #         self._stored_mesh_location_field = None
-        #         raise ValueError('Failed to create stored mesh location field.')
-        #
-        # with ChangeManager(client_field_module) and ChangeManager(host_field_module):
-        #     host_coordinates = host_field_module.createFieldEmbedded(mesh_coordinate_field, self._stored_mesh_location_field)
-        #     apply_host_coordinates = client_field_module.createFieldApply(host_coordinates)
-        #     apply_host_coordinates.setBindArgumentSourceField(coordinate_arg, point_coordinate_field)
-        #     self._data_projection_delta_coordinate_field = client_field_module.createFieldSubtract(
-        #         point_coordinate_field,
-        #         apply_host_coordinates)
-        #     self._data_projection_error_field = client_field_module.createFieldMagnitude(
-        #         self._data_projection_delta_coordinate_field)
-        #
-        #     # TODO: Try use addNodesConditional...?
-        #     node_template = self._model.get_nodes().createNodetemplate()
-        #     node_template.defineField(self._stored_mesh_location_field)
-        #     selection_group = self._get_node_selection_group()
-        #     cache = client_field_module.createFieldcache()
-        #     node = node_iterator.next()
-        #     while node.isValid():
-        #         cache.setNode(node)
-        #         element, xi = find_host_coordinates.evaluateMeshLocation(cache, mesh.getDimension())
-        #         if element.isValid():
-        #             node.merge(node_template)
-        #             result = self._stored_mesh_location_field.assignMeshLocation(cache, element, xi)
-        #             if result != RESULT_OK:
-        #                 print("Something went wrong.")
-        #             _, error = self._data_projection_error_field.evaluateReal(cache, 3)
-        #             if error[0] < 0.00001:
-        #                 selection_group.addNode(node)
-        #         node = node_iterator.next()
+                    if value > 0.5:
+                        index = self._connected_set_index(element_identifier)
+                        if index != -1:
+                            point_datapoint = data_points.findNodeByIdentifier(identifier)
+                            point_datapoint.merge(datapoint_template)
+                            point_cache.setNode(point_datapoint)
+                            self._connected_set_index_field.assignReal(point_cache, index)
+                    progress.setValue(count)
+                    count += 1
+                    if progress.wasCanceled():
+                        cancelled = True
 
-        # TODO: REMOVE:
-        #   Current implementation: ~80s(right-horn), ~64s(left-horn), ~50s(outer).
-        print("Done.")
+                if cancelled:
+                    self._connected_set_index_field = None
+
+            progress.setValue(copied_data_points.getSize())
+
+        if self._connected_set_index_field is not None:
+            element = selection_mesh_group.createElementiterator().next()
+            index = self._connected_set_index(element.getIdentifier())
+            with ChangeManager(point_field_module):
+                constant_field = point_field_module.createFieldConstant(index)
+                conditional_field = point_field_module.createFieldEqualTo(self._connected_set_index_field, constant_field)
+
+            selection_group = self._get_node_selection_group()
+            points_region = self._model.get_points_region()
+            scene = points_region.getScene()
+            with ChangeManager(scene):
+                selection_group.addNodesConditional(conditional_field)
+
+            selection_mesh_group.removeAllElements()
+            self._ui.pushButtonSelectPointsOnSurface.setEnabled(False)
+            self._ui.labelTolerance.setEnabled(False)
+            self._ui.doubleSpinBoxTolerance.setEnabled(False)
 
     def _update_surface_selection(self):
         mesh_selection_group = self._get_mesh_selection_group()
@@ -619,6 +559,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             self._select_connected_mesh_elements(mesh_selection_group)
 
     def _select_connected_mesh_elements(self, mesh_selection_group):
+        start_time = time.time()
         coordinate_field = self._model.get_mesh_coordinates()
         field_module = coordinate_field.getFieldmodule()
         initial_element = mesh_selection_group.createElementiterator().next()
@@ -629,6 +570,17 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                 _select_elements(field_module, mesh_selection_group, selected_elements[0])
             return
 
+        if os.path.isfile("connected_sets.json"):
+            print("loading saved connected sets.")
+            with open("connected_sets.json") as f:
+                self._connected_sets = json.load(f)
+            selected_elements = [_set for _set in self._connected_sets if initial_element_identifier in _set]
+            if selected_elements:
+                _select_elements(field_module, mesh_selection_group, selected_elements[0])
+            return
+
+        print(f"--- run 1 {time.time() - start_time} seconds ---")
+        start_time = time.time()
         mesh = mesh_selection_group.getMasterMesh()
         element_iterator = mesh.createElementiterator()
         element = element_iterator.next()
@@ -646,12 +598,20 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             element_nodes.append(node_identifiers)
             element = element_iterator.next()
 
+        print(f"--- run 2 {time.time() - start_time} seconds ---")
+        start_time = time.time()
         try:
             initial_element_index = element_identifiers.index(initial_element_identifier)
         except ValueError:
             return
 
+        print(f"--- run 3 {time.time() - start_time} seconds ---")
+        start_time = time.time()
+
         connected_sets = _find_connected(initial_element_index, element_nodes)
+
+        print(f"--- run 4 {time.time() - start_time} seconds ---")
+        start_time = time.time()
 
         el_ids = []
         for connected_set in connected_sets:
@@ -661,12 +621,18 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
             el_ids.append(ids)
 
+        print(f"--- run 5 {time.time() - start_time} seconds ---")
+        start_time = time.time()
+
         self._connected_sets = el_ids
+        with open('connected_sets.json', 'w') as f:
+            json.dump(self._connected_sets, f)
         _select_elements(field_module, mesh_selection_group, el_ids[0])
+        print(f"--- run 6 {time.time() - start_time} seconds ---")
 
     def _get_node_selection_group(self):
         selection_field = self._model.get_point_selection_group()
-        return selection_field.getOrCreateNodesetGroup(self._model.get_nodes())
+        return selection_field.getOrCreateNodesetGroup(self._model.get_data_points())
 
     # TODO; Why is this not returning the same object each time...??????
     def _get_mesh_selection_group(self):
@@ -682,7 +648,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         if checked_group is None:
             return None
 
-        return checked_group.getOrCreateNodesetGroup(self._model.get_nodes())
+        return checked_group.getOrCreateNodesetGroup(self._model.get_data_points())
 
     def _get_checked_button(self):
         checked_button = self._button_group.checkedButton()
@@ -834,3 +800,17 @@ def _find_connected(initial_triangle_index, triangles):
                 index += 1
 
     return connected_triangles
+
+
+def _threaded_find_datapoint_location(datapoint_set, identifiers, local_queue, mesh_cache, conditional_field, find_host_coordinates):
+    for identifier in identifiers:
+        datapoint = datapoint_set.findNodeByIdentifier(identifier)
+        element_identifier, value = _find_datapoint_location(mesh_cache, conditional_field, find_host_coordinates, datapoint)
+        local_queue.put((element_identifier, identifier, value))
+
+
+def _find_datapoint_location(mesh_cache, conditional_field, find_host_coordinates, datapoint):
+    mesh_cache.setNode(datapoint)
+    element, xi = find_host_coordinates.evaluateMeshLocation(mesh_cache, 2)
+    _, value = conditional_field.evaluateReal(mesh_cache, 1)
+    return element.getIdentifier(), value

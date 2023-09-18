@@ -96,7 +96,7 @@ class PointCloudPartitionerScene(object):
     def create_point_graphics(self, scene, finite_element_field, subgroup_field, material, mode=Graphics.SELECT_MODE_DRAW_UNSELECTED):
         with ChangeManager(scene):
             graphic = scene.createGraphicsPoints()
-            graphic.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
+            graphic.setFieldDomainType(Field.DOMAIN_TYPE_DATAPOINTS)
 
             if finite_element_field:
                 graphic.setCoordinateField(finite_element_field)
