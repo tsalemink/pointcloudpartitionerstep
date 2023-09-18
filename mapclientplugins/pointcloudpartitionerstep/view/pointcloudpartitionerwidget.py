@@ -22,8 +22,6 @@ from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwid
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
 from mapclientplugins.pointcloudpartitionerstep.view.customsceneselection import CustomSceneSelection, MODE_MAP, TYPE_MAP
 
-import time
-
 INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
 DEFAULT_STYLE_SHEET = ''
 
@@ -54,18 +52,11 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._scene = PointCloudPartitionerScene(model)
         self._selection_handler = CustomSceneSelection(QtCore.Qt.Key.Key_S)
         self._field_module = None
-        # TODO: Why is this never used???
-        #   Was it removed in a previous commit...???
-        #   Yeah...
         self._connected_set_index_field = None
         self._points_field_list = ["---"]
         self._surfaces_field_list = ["---"]
         self._connected_sets = []
-
-        # TODO: ???
-        self._find_host_coordinates = None
-        # TODO: ???
-        self._coordinate_arg = None
+        self._progress_dialog = None
 
         self._check_box_dict = {}  # Key is LineEdit, value is CheckBox.
         self._horizontal_layout_dict = {}  # Key is CheckBox, value is Layout
@@ -453,7 +444,11 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         return -1
 
-    # TODO: Convert to stored mesh location field.
+    def _prepare_progress_dialog(self, label_text, button_text, total):
+        progress = QtWidgets.QProgressDialog(label_text, button_text, 0, total, self)
+        progress.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
+        return progress
+
     def _select_points_on_surface(self):
         selection_mesh_group = self._get_mesh_selection_group()
         point_coordinate_field = self._model.get_point_cloud_coordinates()
@@ -473,8 +468,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             copy_nodeset(mesh_region, data_points)
             copied_data_points = mesh_field_module.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_DATAPOINTS)
 
-            progress = QtWidgets.QProgressDialog("Calculating locations ...", "Abort Calculation", 0, copied_data_points.getSize(), self)
-            progress.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
+            self._progress_dialog = self._prepare_progress_dialog("Calculating locations ...", "Cancel", copied_data_points.getSize())
 
             with ChangeManager(mesh_field_module), ChangeManager(point_field_module):
                 self._connected_set_index_field = point_field_module.createFieldFiniteElement(1)
@@ -520,15 +514,15 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                             point_datapoint.merge(datapoint_template)
                             point_cache.setNode(point_datapoint)
                             self._connected_set_index_field.assignReal(point_cache, index)
-                    progress.setValue(count)
+                    self._progress_dialog.setValue(count)
                     count += 1
-                    if progress.wasCanceled():
+                    if self._progress_dialog.wasCanceled():
                         cancelled = True
 
                 if cancelled:
                     self._connected_set_index_field = None
 
-            progress.setValue(copied_data_points.getSize())
+            self._progress_dialog.setValue(copied_data_points.getSize())
 
         if self._connected_set_index_field is not None:
             element = selection_mesh_group.createElementiterator().next()
@@ -558,8 +552,11 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         if mesh_selected:
             self._select_connected_mesh_elements(mesh_selection_group)
 
+    def _connected_sets_progress(self, value):
+        self._progress_dialog.setValue(value)
+        return self._progress_dialog.wasCanceled()
+
     def _select_connected_mesh_elements(self, mesh_selection_group):
-        start_time = time.time()
         coordinate_field = self._model.get_mesh_coordinates()
         field_module = coordinate_field.getFieldmodule()
         initial_element = mesh_selection_group.createElementiterator().next()
@@ -570,17 +567,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                 _select_elements(field_module, mesh_selection_group, selected_elements[0])
             return
 
-        if os.path.isfile("connected_sets.json"):
-            print("loading saved connected sets.")
-            with open("connected_sets.json") as f:
-                self._connected_sets = json.load(f)
-            selected_elements = [_set for _set in self._connected_sets if initial_element_identifier in _set]
-            if selected_elements:
-                _select_elements(field_module, mesh_selection_group, selected_elements[0])
-            return
-
-        print(f"--- run 1 {time.time() - start_time} seconds ---")
-        start_time = time.time()
         mesh = mesh_selection_group.getMasterMesh()
         element_iterator = mesh.createElementiterator()
         element = element_iterator.next()
@@ -598,20 +584,16 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             element_nodes.append(node_identifiers)
             element = element_iterator.next()
 
-        print(f"--- run 2 {time.time() - start_time} seconds ---")
-        start_time = time.time()
         try:
             initial_element_index = element_identifiers.index(initial_element_identifier)
         except ValueError:
             return
 
-        print(f"--- run 3 {time.time() - start_time} seconds ---")
-        start_time = time.time()
-
-        connected_sets = _find_connected(initial_element_index, element_nodes)
-
-        print(f"--- run 4 {time.time() - start_time} seconds ---")
-        start_time = time.time()
+        self._progress_dialog = self._prepare_progress_dialog("Finding connected surfaces", "Cancel", len(element_nodes))
+        connected_sets = _find_connected(initial_element_index, element_nodes, self._connected_sets_progress)
+        self._progress_dialog.setValue(len(element_nodes))
+        if connected_sets is None:
+            return
 
         el_ids = []
         for connected_set in connected_sets:
@@ -621,14 +603,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
             el_ids.append(ids)
 
-        print(f"--- run 5 {time.time() - start_time} seconds ---")
-        start_time = time.time()
-
         self._connected_sets = el_ids
-        with open('connected_sets.json', 'w') as f:
-            json.dump(self._connected_sets, f)
         _select_elements(field_module, mesh_selection_group, el_ids[0])
-        print(f"--- run 6 {time.time() - start_time} seconds ---")
 
     def _get_node_selection_group(self):
         selection_field = self._model.get_point_selection_group()
@@ -767,7 +743,7 @@ class GroupSelectionDialog(QtWidgets.QDialog):
         return self.line_edit_dict[self.button_group.checkedButton().text()]
 
 
-def _find_connected(initial_triangle_index, triangles):
+def _find_connected(initial_triangle_index, triangles, progress_callback):
     connected_triangles = [[initial_triangle_index]]
     connected_nodes = [set(triangles[initial_triangle_index])]
     for triangle_index, triangle in enumerate(triangles):
@@ -777,6 +753,9 @@ def _find_connected(initial_triangle_index, triangles):
         connected_triangles.append([triangle_index])
         connected_nodes.append(set(triangles[triangle_index]))
 
+        if triangle_index % 100 == 0:
+            if progress_callback(triangle_index):
+                return None
         index = 0
         while index < len(connected_triangles):
             connection_found = False
