@@ -518,6 +518,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                     count += 1
                     if self._progress_dialog.wasCanceled():
                         cancelled = True
+                        break
 
                 if cancelled:
                     self._connected_set_index_field = None
