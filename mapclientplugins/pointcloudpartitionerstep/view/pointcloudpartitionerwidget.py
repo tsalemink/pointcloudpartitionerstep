@@ -9,10 +9,13 @@ import json
 import hashlib
 
 from PySide6 import QtWidgets, QtCore
+from cmlibs.utils.zinc.finiteelement import get_identifiers
 
 from cmlibs.utils.zinc.general import ChangeManager
+from cmlibs.utils.zinc.region import copy_nodeset
 from cmlibs.utils.zinc.scene import scene_get_or_create_selection_group
 from cmlibs.widgets.handlers.scenemanipulation import SceneManipulation
+from cmlibs.zinc.field import Field
 from cmlibs.zinc.field import FieldFindMeshLocation
 from cmlibs.zinc.material import Material
 
@@ -62,10 +65,11 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._scene = PointCloudPartitionerScene(model)
         self._selection_handler = CustomSceneSelection(QtCore.Qt.Key.Key_S)
         self._field_module = None
-        self._stored_mesh_location_field = None
+        self._connected_set_index_field = None
         self._points_field_list = ["---"]
         self._surfaces_field_list = ["---"]
         self._connected_sets = []
+        self._progress_dialog = None
 
         self._check_box_dict = {}  # Key is LineEdit, value is CheckBox.
         self._horizontal_layout_dict = {}  # Key is CheckBox, value is Layout
@@ -166,7 +170,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                 field_list.append(field.getName())
             node_group = field.castGroup()
             if include_nodes and node_group.isValid():
-                nodeset_group = node_group.getNodesetGroup(self._model.get_nodes())
+                nodeset_group = node_group.getNodesetGroup(self._model.get_data_points())
                 if nodeset_group.isValid():
                     self._add_point_group(node_group)
             field = field_iter.next()
@@ -451,49 +455,111 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         scene_filter = scene_filter_module.createScenefilterFieldDomainType(selection_type)
         self._selection_handler.set_scene_filter(scene_filter)
 
+    def _connected_set_index(self, element_id):
+        for index, connected_set in enumerate(self._connected_sets):
+            if element_id in connected_set:
+                return index
+
+        return -1
+
+    def _prepare_progress_dialog(self, label_text, button_text, total):
+        progress = QtWidgets.QProgressDialog(label_text, button_text, 0, total, self)
+        progress.setWindowModality(QtCore.Qt.WindowModality.WindowModal)
+        return progress
+
     def _select_points_on_surface(self):
-        point_coordinate_field = self._model.get_point_cloud_coordinates()
-        mesh_coordinate_field = self._model.get_mesh_coordinates()
         selection_mesh_group = self._get_mesh_selection_group()
+        point_coordinate_field = self._model.get_point_cloud_coordinates()
+        point_field_module = point_coordinate_field.getFieldmodule()
 
-        points_region = self._model.get_points_region()
-        scene = points_region.getScene()
+        if self._connected_set_index_field is None:
+            mesh_coordinate_field = self._model.get_mesh_coordinates()
 
-        client_field_module = point_coordinate_field.getFieldmodule()
-        host_field_module = mesh_coordinate_field.getFieldmodule()
+            mesh_region = self._model.get_surfaces_region()
 
-        with ChangeManager(host_field_module), ChangeManager(client_field_module):
-            coordinate_arg = host_field_module.createFieldArgumentReal(3)
-            find_host_coordinates = host_field_module.createFieldFindMeshLocation(coordinate_arg, mesh_coordinate_field, selection_mesh_group)
-            find_host_coordinates.setSearchMode(FieldFindMeshLocation.SEARCH_MODE_NEAREST)
-            host_coordinates = host_field_module.createFieldEmbedded(mesh_coordinate_field, find_host_coordinates)
+            mesh_field_module = mesh_coordinate_field.getFieldmodule()
 
-            apply_host_coordinates = client_field_module.createFieldApply(host_coordinates)
-            apply_host_coordinates.setBindArgumentSourceField(coordinate_arg, point_coordinate_field)
+            mesh2d = mesh_field_module.findMeshByDimension(2)
 
-            self._data_projection_delta_coordinate_field = client_field_module.createFieldSubtract(
-                point_coordinate_field,
-                apply_host_coordinates)
+            # Transfer datapoints over to mesh region.
+            data_points = self._model.get_data_points()
+            copy_nodeset(mesh_region, data_points)
+            copied_data_points = mesh_field_module.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_DATAPOINTS)
 
-            self._data_projection_error_field = client_field_module.createFieldMagnitude(
-                self._data_projection_delta_coordinate_field)
-            tolerance_value = self._ui.doubleSpinBoxTolerance.value()
-            tolerance_field = client_field_module.createFieldConstant(tolerance_value)
+            self._progress_dialog = self._prepare_progress_dialog("Calculating locations ...", "Cancel", copied_data_points.getSize())
 
-            conditional_field = client_field_module.createFieldLessThan(self._data_projection_error_field, tolerance_field)
+            with ChangeManager(mesh_field_module), ChangeManager(point_field_module):
+                self._connected_set_index_field = point_field_module.createFieldFiniteElement(1)
+                find_host_coordinates = mesh_field_module.createFieldFindMeshLocation(mesh_coordinate_field, mesh_coordinate_field, mesh2d)
+                find_host_coordinates.setSearchMode(FieldFindMeshLocation.SEARCH_MODE_NEAREST)
+                host_coordinates = mesh_field_module.createFieldEmbedded(mesh_coordinate_field, find_host_coordinates)
 
-            selection_group = self._get_node_selection_group()  # scene_get_or_create_selection_group(scene)
-            # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
-            # if not selected_nodeset_group.isValid():
-            #     selected_nodeset_group = selection_group.createNodesetGroup(self._model.get_nodes())
+                data_projection_delta_coordinate_field = mesh_field_module.createFieldSubtract(
+                            mesh_coordinate_field,
+                            host_coordinates)
+                data_projection_error_field = mesh_field_module.createFieldMagnitude(
+                            data_projection_delta_coordinate_field)
+                tolerance_value = self._ui.doubleSpinBoxTolerance.value()
+                tolerance_field = mesh_field_module.createFieldConstant(tolerance_value)
 
+                conditional_field = mesh_field_module.createFieldLessThan(data_projection_error_field, tolerance_field)
+
+                point_cache = point_field_module.createFieldcache()
+
+                datapoint_template = data_points.createNodetemplate()
+                datapoint_template.defineField(self._connected_set_index_field)
+
+                identifiers = get_identifiers(copied_data_points)
+                divisions = 1
+                chunk_size = len(identifiers) // divisions
+                split_identifiers = [identifiers[i * chunk_size: (i + 1) * chunk_size] for i in range(divisions)]
+                remainder = identifiers[divisions*chunk_size:]
+                if remainder:
+                    split_identifiers.append(remainder)
+
+                cancelled = False
+                count = 0
+
+                mesh_cache = mesh_field_module.createFieldcache()
+                for identifier in identifiers:
+                    datapoint = copied_data_points.findNodeByIdentifier(identifier)
+                    element_identifier, value = _find_datapoint_location(mesh_cache, conditional_field, find_host_coordinates, datapoint)
+
+                    if value > 0.5:
+                        index = self._connected_set_index(element_identifier)
+                        if index != -1:
+                            point_datapoint = data_points.findNodeByIdentifier(identifier)
+                            point_datapoint.merge(datapoint_template)
+                            point_cache.setNode(point_datapoint)
+                            self._connected_set_index_field.assignReal(point_cache, index)
+                    self._progress_dialog.setValue(count)
+                    count += 1
+                    if self._progress_dialog.wasCanceled():
+                        cancelled = True
+                        break
+
+                self._progress_dialog.setValue(copied_data_points.getSize())
+                copied_data_points.destroyAllNodes()
+                if cancelled:
+                    self._connected_set_index_field = None
+
+        if self._connected_set_index_field is not None:
+            element = selection_mesh_group.createElementiterator().next()
+            index = self._connected_set_index(element.getIdentifier())
+            with ChangeManager(point_field_module):
+                constant_field = point_field_module.createFieldConstant(index)
+                conditional_field = point_field_module.createFieldEqualTo(self._connected_set_index_field, constant_field)
+
+            selection_group = self._get_node_selection_group()
+            points_region = self._model.get_points_region()
+            scene = points_region.getScene()
             with ChangeManager(scene):
                 selection_group.addNodesConditional(conditional_field)
 
-        selection_mesh_group.removeAllElements()
-        self._ui.pushButtonSelectPointsOnSurface.setEnabled(False)
-        self._ui.labelTolerance.setEnabled(False)
-        self._ui.doubleSpinBoxTolerance.setEnabled(False)
+            selection_mesh_group.removeAllElements()
+            self._ui.pushButtonSelectPointsOnSurface.setEnabled(False)
+            self._ui.labelTolerance.setEnabled(False)
+            self._ui.doubleSpinBoxTolerance.setEnabled(False)
 
     def _update_surface_selection(self):
         mesh_selection_group = self._get_mesh_selection_group()
@@ -504,6 +570,10 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         if mesh_selected:
             self._select_connected_mesh_elements(mesh_selection_group)
+
+    def _connected_sets_progress(self, value):
+        self._progress_dialog.setValue(value)
+        return self._progress_dialog.wasCanceled()
 
     def _select_connected_mesh_elements(self, mesh_selection_group):
         coordinate_field = self._model.get_mesh_coordinates()
@@ -538,7 +608,11 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         except ValueError:
             return
 
-        connected_sets = _find_connected(initial_element_index, element_nodes)
+        self._progress_dialog = self._prepare_progress_dialog("Finding connected surfaces", "Cancel", len(element_nodes))
+        connected_sets = _find_connected(initial_element_index, element_nodes, self._connected_sets_progress)
+        self._progress_dialog.setValue(len(element_nodes))
+        if connected_sets is None:
+            return
 
         el_ids = []
         for connected_set in connected_sets:
@@ -553,8 +627,9 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _get_node_selection_group(self):
         selection_field = self._model.get_point_selection_group()
-        return selection_field.getOrCreateNodesetGroup(self._model.get_nodes())
+        return selection_field.getOrCreateNodesetGroup(self._model.get_data_points())
 
+    # TODO; Why is this not returning the same object each time...??????
     def _get_mesh_selection_group(self):
         region = self._model.get_surfaces_region()
         selection_field = scene_get_or_create_selection_group(region.getScene())
@@ -568,7 +643,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         if checked_group is None:
             return None
 
-        return checked_group.getOrCreateNodesetGroup(self._model.get_nodes())
+        return checked_group.getOrCreateNodesetGroup(self._model.get_data_points())
 
     def _get_checked_button(self):
         checked_button = self._button_group.checkedButton()
@@ -693,7 +768,10 @@ class GroupSelectionDialog(QtWidgets.QDialog):
         return self.line_edit_dict[self.button_group.checkedButton().text()]
 
 
-def _find_connected(initial_triangle_index, triangles):
+def _find_connected(initial_triangle_index, triangles, progress_callback):
+    num_triangles = len(triangles)
+    update_interval = int(num_triangles * 0.01)
+    update_indexes = set([i for i in range(update_interval)] + [i for i in range(0, num_triangles, update_interval)])
     connected_triangles = [[initial_triangle_index]]
     connected_nodes = [set(triangles[initial_triangle_index])]
     for triangle_index, triangle in enumerate(triangles):
@@ -703,6 +781,9 @@ def _find_connected(initial_triangle_index, triangles):
         connected_triangles.append([triangle_index])
         connected_nodes.append(set(triangles[triangle_index]))
 
+        if triangle_index in update_indexes:
+            if progress_callback(triangle_index):
+                return None
         index = 0
         while index < len(connected_triangles):
             connection_found = False
@@ -726,3 +807,17 @@ def _find_connected(initial_triangle_index, triangles):
                 index += 1
 
     return connected_triangles
+
+
+def _threaded_find_datapoint_location(datapoint_set, identifiers, local_queue, mesh_cache, conditional_field, find_host_coordinates):
+    for identifier in identifiers:
+        datapoint = datapoint_set.findNodeByIdentifier(identifier)
+        element_identifier, value = _find_datapoint_location(mesh_cache, conditional_field, find_host_coordinates, datapoint)
+        local_queue.put((element_identifier, identifier, value))
+
+
+def _find_datapoint_location(mesh_cache, conditional_field, find_host_coordinates, datapoint):
+    mesh_cache.setNode(datapoint)
+    element, xi = find_host_coordinates.evaluateMeshLocation(mesh_cache, 2)
+    _, value = conditional_field.evaluateReal(mesh_cache, 1)
+    return element.getIdentifier(), value

@@ -3,8 +3,12 @@ Created: April, 2023
 
 @author: tsalemink
 """
+from cmlibs.utils.zinc.field import find_or_create_field_group
+from cmlibs.utils.zinc.general import ChangeManager
+from cmlibs.utils.zinc.region import convert_nodes_to_datapoints
 from cmlibs.utils.zinc.scene import scene_create_selection_group
 from cmlibs.zinc.context import Context
+from cmlibs.zinc.field import Field
 
 
 class PointCloudPartitionerModel(object):
@@ -12,7 +16,7 @@ class PointCloudPartitionerModel(object):
     def __init__(self):
         self._point_cloud_coordinates_field = None
         self._mesh_coordinates_field = None
-        self._point_cloud_nodes = None
+        self._point_cloud_data_points = None
         self._point_selection_group = None
         self._mesh = None
 
@@ -22,10 +26,17 @@ class PointCloudPartitionerModel(object):
         self._label_region = root_region.createChild("label")
         self._surfaces_region = root_region.createChild("surfaces")
 
+        # TODO: Try this...
+        self._root_region = root_region
+
         self.define_standard_materials()
         self.define_standard_glyphs()
 
         self._selection_filter = self._create_selection_filter()
+
+    # TODO: ???
+    def get_root_region(self):
+        return self._root_region
 
     def get_selection_filter(self):
         return self._selection_filter
@@ -33,18 +44,20 @@ class PointCloudPartitionerModel(object):
     def load(self, points_file_location, surface_segmentation_file_location):
         self._points_region.readFile(points_file_location)
 
+        surface_segmentation_field_module = self._surfaces_region.getFieldmodule()
         if surface_segmentation_file_location is not None:
             self._surfaces_region.readFile(surface_segmentation_file_location)
+            datapoints = surface_segmentation_field_module.findNodesetByFieldDomainType(Field.DOMAIN_TYPE_DATAPOINTS)
+            datapoints.destroyAllNodes()
 
         points_field_module = self._points_region.getFieldmodule()
         self._point_selection_group = scene_create_selection_group(self._points_region.getScene())
-        self._point_cloud_nodes = points_field_module.findNodesetByName("nodes")
-        # nodes = points_field_module.findNodesetByName("nodes")
-        # field_group = points_field_module.createFieldGroup()
-        # field_group.setName(ALL_NODES_GROUP_NAME)
-        # self._point_cloud_nodes = field_group.createNodesetGroup(nodes)
+        node_datapoints = points_field_module.findNodesetByName("nodes")
+        self._point_cloud_data_points = points_field_module.findNodesetByName("datapoints")
 
-        surface_segmentation_field_module = self._surfaces_region.getFieldmodule()
+        if node_datapoints.getSize() > 0:
+            convert_nodes_to_datapoints(self._points_region, self._points_region)
+
         self._mesh = surface_segmentation_field_module.findMeshByDimension(2)
 
     def get_context(self):
@@ -82,8 +95,8 @@ class PointCloudPartitionerModel(object):
     def get_point_selection_group(self):
         return self._point_selection_group
 
-    def get_nodes(self):
-        return self._point_cloud_nodes
+    def get_data_points(self):
+        return self._point_cloud_data_points
 
     def get_mesh(self):
         return self._mesh

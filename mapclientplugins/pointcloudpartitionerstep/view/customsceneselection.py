@@ -17,7 +17,7 @@ MODE_MAP = {
 
 
 TYPE_MAP = {
-    "Points": Field.DOMAIN_TYPE_NODES,
+    "Points": Field.DOMAIN_TYPE_DATAPOINTS,
     "Surfaces": Field.DOMAIN_TYPE_MESH2D,
 }
 
