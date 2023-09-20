@@ -745,6 +745,9 @@ class GroupSelectionDialog(QtWidgets.QDialog):
 
 
 def _find_connected(initial_triangle_index, triangles, progress_callback):
+    num_triangles = len(triangles)
+    update_interval = int(num_triangles * 0.01)
+    update_indexes = set([i for i in range(update_interval)] + [i for i in range(0, num_triangles, update_interval)])
     connected_triangles = [[initial_triangle_index]]
     connected_nodes = [set(triangles[initial_triangle_index])]
     for triangle_index, triangle in enumerate(triangles):
@@ -754,7 +757,7 @@ def _find_connected(initial_triangle_index, triangles, progress_callback):
         connected_triangles.append([triangle_index])
         connected_nodes.append(set(triangles[triangle_index]))
 
-        if triangle_index % 100 == 0:
+        if triangle_index in update_indexes:
             if progress_callback(triangle_index):
                 return None
         index = 0
