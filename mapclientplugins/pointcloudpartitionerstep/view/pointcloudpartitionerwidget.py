@@ -520,10 +520,10 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                         cancelled = True
                         break
 
+                self._progress_dialog.setValue(copied_data_points.getSize())
+                copied_data_points.destroyAllNodes()
                 if cancelled:
                     self._connected_set_index_field = None
-
-            self._progress_dialog.setValue(copied_data_points.getSize())
 
         if self._connected_set_index_field is not None:
             element = selection_mesh_group.createElementiterator().next()
