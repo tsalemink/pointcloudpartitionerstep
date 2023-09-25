@@ -32,6 +32,10 @@ class ZincPointCloudPartitionerWidget(BaseSceneviewerWidget):
         super()._activate_handler(handler)
         self.handler_updated.emit()
 
+    def mouse_enter_event(self, event):
+        super().mouse_enter_event(event)
+        self.setFocus()
+
     def mouse_release_event(self, event):
         if isinstance(self.get_active_handler(), SceneSelection):
             super().mouse_release_event(event)

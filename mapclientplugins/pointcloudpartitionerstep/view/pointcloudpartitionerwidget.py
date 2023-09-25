@@ -626,13 +626,13 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         _select_elements(field_module, mesh_selection_group, el_ids[0])
 
     def _get_node_selection_group(self):
-        selection_field = self._model.get_point_selection_group()
+        scene = self._ui.widgetZinc.get_zinc_sceneviewer().getScene()
+        selection_field = scene_get_or_create_selection_group(scene)
         return selection_field.getOrCreateNodesetGroup(self._model.get_data_points())
 
-    # TODO; Why is this not returning the same object each time...??????
     def _get_mesh_selection_group(self):
-        region = self._model.get_surfaces_region()
-        selection_field = scene_get_or_create_selection_group(region.getScene())
+        scene = self._ui.widgetZinc.get_zinc_sceneviewer().getScene()
+        selection_field = scene_get_or_create_selection_group(scene)
         return selection_field.getMeshGroup(self._model.get_mesh())
 
     def _get_checked_group(self):
