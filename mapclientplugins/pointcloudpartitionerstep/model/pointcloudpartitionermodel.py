@@ -3,8 +3,6 @@ Created: April, 2023
 
 @author: tsalemink
 """
-from cmlibs.utils.zinc.field import find_or_create_field_group
-from cmlibs.utils.zinc.general import ChangeManager
 from cmlibs.utils.zinc.region import convert_nodes_to_datapoints
 from cmlibs.utils.zinc.scene import scene_create_selection_group
 from cmlibs.zinc.context import Context
@@ -21,20 +19,16 @@ class PointCloudPartitionerModel(object):
         self._mesh = None
 
         self._context = Context("PointCloudPartitioner")
-        root_region = self._context.getDefaultRegion()
-        self._points_region = root_region.createChild("points")
-        self._label_region = root_region.createChild("label")
-        self._surfaces_region = root_region.createChild("surfaces")
-
-        # TODO: Try this...
-        self._root_region = root_region
+        self._root_region = self._context.getDefaultRegion()
+        self._points_region = self._root_region.createChild("points")
+        self._label_region = self._root_region.createChild("label")
+        self._surfaces_region = self._root_region.createChild("surfaces")
 
         self.define_standard_materials()
         self.define_standard_glyphs()
 
         self._selection_filter = self._create_selection_filter()
 
-    # TODO: ???
     def get_root_region(self):
         return self._root_region
 
