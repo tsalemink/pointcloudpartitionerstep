@@ -97,7 +97,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.widgetZinc.pixel_scale_changed.connect(self._pixel_scale_changed)
         self._ui.pushButtonCreateGroup.clicked.connect(self._create_point_group)
         self._ui.pushButtonDeleteGroup.clicked.connect(self._remove_associated_point_group)
-        self._ui.pushButtonAddToGroup.clicked.connect(self._add_points_to_group)
+        self._ui.pushButtonAddToGroup.clicked.connect(self._add_selected_points_to_group)
         self._ui.pushButtonRemoveFromGroup.clicked.connect(self._remove_selected_points_from_group)
         self._ui.pointsFieldComboBox.textActivated.connect(self._update_point_cloud_field)
         self._ui.meshFieldComboBox.textActivated.connect(self._update_mesh_field)
@@ -108,7 +108,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.checkBoxPointsVisibility.stateChanged.connect(self._scene.set_points_visibility)
         self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
         self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
-        self._ui.widgetZinc.selection_updated.connect(self._update_surface_selection)
+        self._ui.widgetZinc.selection_updated.connect(self._selection_updated)
 
     def _setup_field_combo_boxes(self):
         self._ui.pointsFieldComboBox.addItems(self._points_field_list)
@@ -387,8 +387,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         if not nodeset_group:
             return
 
-        # selection_group = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
         selected_nodeset_group = self._get_node_selection_group()
         scene = self._field_module.getRegion().getScene()
         with ChangeManager(scene):
@@ -398,14 +396,18 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                 selected_nodeset_group.addNode(node)
                 node = node_iter.next()
 
-    def _add_points_to_group(self):
-        # selection_group = self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
+        self._selection_updated()
+
+    def _add_selected_points_to_group(self):
         checked_group = self._get_checked_group()
         nodeset_group = self._get_checked_nodeset_group(checked_group)
         if not nodeset_group.isValid():
             return
 
+        self._add_points_to_group(nodeset_group)
+        self._selection_updated()
+
+    def _add_points_to_group(self, nodeset_group):
         # Add the selected Nodes to the chosen Group.
         scene = self._field_module.getRegion().getScene()
         selection_group = scene.getSelectionField().castGroup()
@@ -416,15 +418,15 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             while node.isValid():
                 nodeset_group.addNode(node)
                 node = node_iter.next()
-
             selection_group.clear()
 
     def _remove_selected_points_from_group(self):
-        selection_group = self._model.get_point_selection_group()  # self._field_module.findFieldByName(SELECTION_GROUP_NAME).castGroup()
-        # selected_nodeset_group = selection_group.getNodesetGroup(self._model.get_nodes())
+        selection_group = self._model.get_point_selection_group()
         selected_nodeset_group = self._get_node_selection_group()
         checked_button = self._get_checked_button()
+
         self._remove_points_from_group(checked_button, selection_group, selected_nodeset_group)
+        self._selection_updated()
 
     def _remove_points_from_group(self, checked_button, field_group=None, selected_nodeset_group=None):
         checked_group = self._point_group_dict.get(checked_button, None)
@@ -557,11 +559,19 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
                 selection_group.addNodesConditional(conditional_field)
 
             selection_mesh_group.removeAllElements()
-            self._ui.pushButtonSelectPointsOnSurface.setEnabled(False)
-            self._ui.labelTolerance.setEnabled(False)
-            self._ui.doubleSpinBoxTolerance.setEnabled(False)
+            self._selection_updated()
 
-    def _update_surface_selection(self):
+    def _selection_updated(self):
+        self._node_selection_updated()
+        self._surface_selection_updated()
+
+    def _node_selection_updated(self):
+        node_selection_group = self._get_node_selection_group()
+        nodes_selected = node_selection_group is not None and node_selection_group.getSize()
+        self._ui.pushButtonAddToGroup.setEnabled(nodes_selected)
+        self._ui.pushButtonRemoveFromGroup.setEnabled(nodes_selected)
+
+    def _surface_selection_updated(self):
         mesh_selection_group = self._get_mesh_selection_group()
         mesh_selected = mesh_selection_group is not None and mesh_selection_group.getSize()
         self._ui.pushButtonSelectPointsOnSurface.setEnabled(mesh_selected)

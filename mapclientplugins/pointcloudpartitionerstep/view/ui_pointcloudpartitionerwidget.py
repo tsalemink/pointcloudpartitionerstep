@@ -65,11 +65,13 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.pushButtonAddToGroup = QPushButton(self.groupBox_2)
         self.pushButtonAddToGroup.setObjectName(u"pushButtonAddToGroup")
+        self.pushButtonAddToGroup.setEnabled(False)
 
         self.verticalLayout_4.addWidget(self.pushButtonAddToGroup)
 
         self.pushButtonRemoveFromGroup = QPushButton(self.groupBox_2)
         self.pushButtonRemoveFromGroup.setObjectName(u"pushButtonRemoveFromGroup")
+        self.pushButtonRemoveFromGroup.setEnabled(False)
 
         self.verticalLayout_4.addWidget(self.pushButtonRemoveFromGroup)
 
