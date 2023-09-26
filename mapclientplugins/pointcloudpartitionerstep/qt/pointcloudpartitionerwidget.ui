@@ -35,7 +35,14 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_5"/>
+            <widget class="CustomListView" name="groupListView">
+             <property name="acceptDrops">
+              <bool>true</bool>
+             </property>
+             <property name="dragDropMode">
+              <enum>QAbstractItemView::InternalMove</enum>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="verticalSpacer">
@@ -343,6 +350,11 @@
    <extends>QWidget</extends>
    <header>mapclientplugins/pointcloudpartitionerstep/view/zincpointcloudpartitionerwidget.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>CustomListView</class>
+   <extends>QListView</extends>
+   <header>mapclientplugins/pointcloudpartitionerstep/view/customlistview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -15,11 +15,12 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox,
-    QGridLayout, QGroupBox, QHBoxLayout, QLabel,
-    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
-    QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
+    QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
+    QLabel, QPushButton, QSizePolicy, QSpacerItem,
+    QVBoxLayout, QWidget)
 
+from mapclientplugins.pointcloudpartitionerstep.view.customlistview import CustomListView
 from mapclientplugins.pointcloudpartitionerstep.view.zincpointcloudpartitionerwidget import ZincPointCloudPartitionerWidget
 
 class Ui_PointCloudPartitionerWidget(object):
@@ -44,10 +45,12 @@ class Ui_PointCloudPartitionerWidget(object):
         self.groupBox_2.setSizePolicy(sizePolicy)
         self.verticalLayout_4 = QVBoxLayout(self.groupBox_2)
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.verticalLayout_5 = QVBoxLayout()
-        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
+        self.groupListView = CustomListView(self.groupBox_2)
+        self.groupListView.setObjectName(u"groupListView")
+        self.groupListView.setAcceptDrops(True)
+        self.groupListView.setDragDropMode(QAbstractItemView.InternalMove)
 
-        self.verticalLayout_4.addLayout(self.verticalLayout_5)
+        self.verticalLayout_4.addWidget(self.groupListView)
 
         self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
 

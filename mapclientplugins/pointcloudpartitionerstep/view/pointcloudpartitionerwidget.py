@@ -8,7 +8,7 @@ import os
 import json
 import hashlib
 
-from PySide6 import QtWidgets, QtCore
+from PySide6 import QtWidgets, QtCore, QtGui
 from cmlibs.utils.zinc.finiteelement import get_identifiers
 
 from cmlibs.utils.zinc.general import ChangeManager
@@ -78,6 +78,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._rgb_dict = {}  # Key is CheckBox, value is RGB-Value.
         self._button_group = QtWidgets.QButtonGroup()
 
+        self._setup_group_list()
         self._setup_selection_mode_combo_box()
         self._setup_selection_type_combo_box()
         self._setup_point_size_spin_box()
@@ -130,6 +131,13 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._model.update_mesh_coordinates(self._ui.meshFieldComboBox.currentText())
         self._scene.update_mesh_coordinates()
         # self._ui.widgetZinc.view_all()
+
+    # TODO: Maybe should also change the background color to the same grey as everything else...???!!!
+    def _setup_group_list(self):
+        self._list_model = QtGui.QStandardItemModel()
+        self._ui.groupListView.setModel(self._list_model)
+        self._ui.groupListView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._ui.groupListView.setSizeAdjustPolicy(QtWidgets.QListView.SizeAdjustPolicy.AdjustToContents)
 
     def _setup_selection_mode_combo_box(self):
         self._ui.comboBoxSelectionMode.addItems(MODE_MAP.keys())
@@ -278,9 +286,20 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _layout_point_group(self, widgets):
         horizontal_layout = QtWidgets.QHBoxLayout()
+        horizontal_layout.setContentsMargins(5, 5, 5, 5)
         for widget in widgets:
             horizontal_layout.addWidget(widget)
-        self._ui.verticalLayout_5.addLayout(horizontal_layout)
+
+        # TODO: Maybe we could move some of this code inside a list-view method since we will be copying most of it there...
+        #   We would have to use insert instead of append but should ba able to make it work.
+        item_widget = QtWidgets.QWidget()
+        item_widget.setLayout(horizontal_layout)
+        item = QtGui.QStandardItem()
+        item.setDropEnabled(False)
+        item.setSizeHint(item_widget.sizeHint())
+        self._list_model.appendRow(item)
+        self._ui.groupListView.setIndexWidget(item.index(), item_widget)
+
         return horizontal_layout
 
     def _add_point_group(self, group=None):
@@ -293,7 +312,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             group = self._field_module.createFieldGroup()
             group.setName(line_edit.text())
 
-        self._register_point_group(group, line_edit, check_box, horizontal_layout, sel_button)
+        self._horizontal_layout_dict[check_box] = horizontal_layout
 
     def _create_point_group(self):
         self._add_point_group()
@@ -338,6 +357,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         # Schedule the group for deletion.
         self._point_group_dict[checked_button].setManaged(False)
         # Remove UI elements.
+        # TODO: Since we no longer have a handle to the item we need to loop through and find which group was deleted.
         horizontal_layout = self._horizontal_layout_dict[checked_button]
         for i in reversed(range(horizontal_layout.count())):
             horizontal_layout.itemAt(i).widget().deleteLater()
