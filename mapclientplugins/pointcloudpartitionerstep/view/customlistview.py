@@ -27,23 +27,4 @@ class CustomListView(QtWidgets.QListView):
         self.model().insertRow(index, item)
         self.setIndexWidget(item.index(), widget)
 
-    # TODO: ???
-    def cleanup_items(self):
-        for row in range(self.model().rowCount()):
-            index = self.model().index(row, 0)
-
-            # TODO: REMOVE:
-            # print(f"Row: {row}")
-            # print(f"Index: {index}")
-            print(f"Layout: {self.indexWidget(index).layout()}")
-            print(f"Size: {self.indexWidget(index).layout().count()}")
-
-            # Check if the container widget's layout is empty (no child widgets)
-            if not self.indexWidget(index).layout():
-
-                # TODO: REMOVE:
-                print("Removing...")
-
-                self.model().removeRow(row)
-                # Decrement row to account for the removed item
-                row -= 1
+        return item

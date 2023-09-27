@@ -72,7 +72,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._progress_dialog = None
 
         self._check_box_dict = {}  # Key is LineEdit, value is CheckBox.
-        self._horizontal_layout_dict = {}  # Key is CheckBox, value is Layout
+        self._row_dict = {}  # Key is CheckBox, value is a Widget
         self._button_dict = {}  # Key is Button, value is CheckBox
         self._point_group_dict = {}  # Key is CheckBox, value is Group.
         self._rgb_dict = {}  # Key is CheckBox, value is RGB-Value.
@@ -291,29 +291,29 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             horizontal_layout.addWidget(widget)
         item_widget = QtWidgets.QWidget()
         item_widget.setLayout(horizontal_layout)
-        self._ui.groupListView.create_row(item_widget)
+        item = self._ui.groupListView.create_row(item_widget)
 
-        return horizontal_layout
+        return item
 
     def _add_point_group(self, group=None):
         line_edit = self._create_group_line_edit(group.getName() if group is not None else None)
         check_box = self._create_check_box()
         sel_button = self._create_button("sel.")
-        horizontal_layout = self._layout_point_group([check_box, line_edit, sel_button])
+        item = self._layout_point_group([check_box, line_edit, sel_button])
 
         if group is None:
             group = self._field_module.createFieldGroup()
             group.setName(line_edit.text())
 
-        self._register_point_group(group, line_edit, check_box, horizontal_layout, sel_button)
+        self._register_point_group(group, line_edit, check_box, item, sel_button)
 
     def _create_point_group(self):
         self._add_point_group()
         self._update_node_graphics_subgroup()
 
-    def _register_point_group(self, group, line_edit, check_box, horizontal_layout, sel_button):
+    def _register_point_group(self, group, line_edit, check_box, item, sel_button):
         self._check_box_dict[line_edit] = check_box
-        self._horizontal_layout_dict[check_box] = horizontal_layout
+        self._row_dict[check_box] = item
         self._point_group_dict[check_box] = group
         self._button_dict[sel_button] = check_box
         self._rgb_dict[check_box] = None
@@ -350,15 +350,18 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         # Schedule the group for deletion.
         self._point_group_dict[checked_button].setManaged(False)
         # Remove UI elements.
-        horizontal_layout = self._horizontal_layout_dict[checked_button]
-        for i in reversed(range(horizontal_layout.count())):
-            horizontal_layout.itemAt(i).widget().deleteLater()
-        horizontal_layout.deleteLater()
+        item = self._row_dict[checked_button]
+        item_widget = self._ui.groupListView.indexWidget(item.index())
+        layout = item_widget.layout()
+        for i in reversed(range(layout.count())):
+            layout.itemAt(i).widget().deleteLater()
+        item_widget.deleteLater()
+        self._list_model.removeRow(item.row())
 
         # Remove dictionary entries.
         del self._rgb_dict[checked_button]
         del self._point_group_dict[checked_button]
-        del self._horizontal_layout_dict[checked_button]
+        del self._row_dict[checked_button]
         for key in self._check_box_dict.keys():
             if self._check_box_dict[key] is checked_button:
                 del self._check_box_dict[key]
@@ -371,9 +374,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         for key in delete_keys:
             del self._button_dict[key]
-
-        # TODO: ???
-        self._ui.groupListView.cleanup_items()
 
         # Update the scene.
         self._update_color_map()
