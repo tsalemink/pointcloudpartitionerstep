@@ -289,16 +289,9 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         horizontal_layout.setContentsMargins(5, 5, 5, 5)
         for widget in widgets:
             horizontal_layout.addWidget(widget)
-
-        # TODO: Maybe we could move some of this code inside a list-view method since we will be copying most of it there...
-        #   We would have to use insert instead of append but should ba able to make it work.
         item_widget = QtWidgets.QWidget()
         item_widget.setLayout(horizontal_layout)
-        item = QtGui.QStandardItem()
-        item.setDropEnabled(False)
-        item.setSizeHint(item_widget.sizeHint())
-        self._list_model.appendRow(item)
-        self._ui.groupListView.setIndexWidget(item.index(), item_widget)
+        self._ui.groupListView.create_row(item_widget)
 
         return horizontal_layout
 
@@ -312,7 +305,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             group = self._field_module.createFieldGroup()
             group.setName(line_edit.text())
 
-        self._horizontal_layout_dict[check_box] = horizontal_layout
+        self._register_point_group(group, line_edit, check_box, horizontal_layout, sel_button)
 
     def _create_point_group(self):
         self._add_point_group()
@@ -357,7 +350,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         # Schedule the group for deletion.
         self._point_group_dict[checked_button].setManaged(False)
         # Remove UI elements.
-        # TODO: Since we no longer have a handle to the item we need to loop through and find which group was deleted.
         horizontal_layout = self._horizontal_layout_dict[checked_button]
         for i in reversed(range(horizontal_layout.count())):
             horizontal_layout.itemAt(i).widget().deleteLater()
@@ -379,6 +371,9 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         for key in delete_keys:
             del self._button_dict[key]
+
+        # TODO: ???
+        self._ui.groupListView.cleanup_items()
 
         # Update the scene.
         self._update_color_map()

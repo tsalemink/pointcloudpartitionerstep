@@ -1,21 +1,10 @@
 from PySide6 import QtWidgets, QtGui
 
 
-# TODO: Using a delegate may circumvent some of these issues, but would need some serious work...
-
-# TODO: One issue I can see is that the PCPWidget keeps a handle to the QStandardItem so it can delete it later.
-#   But this item may have been removed...
-#   So, the Delete Group button won't work...?
-#   ...
-#   We could emit a signal when we move an row...?
-#   ...
-#   Ideally, we would just keep a handle to the layout as this stays constant...
-#   Once the layout has been deleted, perhaps we could check if any of the item widgets are empty and delete those...?
 class CustomListView(QtWidgets.QListView):
-    """
-    ???
-    """
 
+    # TODO: The cleanup method isn't working...
+    #   We might have to try using items instead of layouts and try updating the dict on signal from this method...??????
     def dropEvent(self, event):
         target_index = self.indexAt(event.pos())
         source_index = self.selectedIndexes()[0]
@@ -26,11 +15,35 @@ class CustomListView(QtWidgets.QListView):
         target_widget.setLayout(source_layout)
 
         self.model().removeRow(source_index.row())
-        self.create_row(target_index.row(), target_widget)
+        self.create_row(target_widget, target_index.row())
 
-    def create_row(self, index, widget):
+    def create_row(self, widget, index=None):
+        if index is None:
+            index = self.model().rowCount()
+
         item = QtGui.QStandardItem()
         item.setDropEnabled(False)
         item.setSizeHint(widget.sizeHint())
         self.model().insertRow(index, item)
         self.setIndexWidget(item.index(), widget)
+
+    # TODO: ???
+    def cleanup_items(self):
+        for row in range(self.model().rowCount()):
+            index = self.model().index(row, 0)
+
+            # TODO: REMOVE:
+            # print(f"Row: {row}")
+            # print(f"Index: {index}")
+            print(f"Layout: {self.indexWidget(index).layout()}")
+            print(f"Size: {self.indexWidget(index).layout().count()}")
+
+            # Check if the container widget's layout is empty (no child widgets)
+            if not self.indexWidget(index).layout():
+
+                # TODO: REMOVE:
+                print("Removing...")
+
+                self.model().removeRow(row)
+                # Decrement row to account for the removed item
+                row -= 1

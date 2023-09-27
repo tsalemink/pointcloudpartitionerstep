@@ -52,10 +52,6 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.verticalLayout_4.addWidget(self.groupListView)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        self.verticalLayout_4.addItem(self.verticalSpacer)
-
         self.pushButtonCreateGroup = QPushButton(self.groupBox_2)
         self.pushButtonCreateGroup.setObjectName(u"pushButtonCreateGroup")
 
