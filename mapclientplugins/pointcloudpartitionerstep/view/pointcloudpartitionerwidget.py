@@ -71,6 +71,9 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._connected_sets = []
         self._progress_dialog = None
 
+        # TODO: Why do we actually need all of these?
+        #   - to generate unique identifiers
+
         self._check_box_dict = {}  # Key is LineEdit, value is CheckBox.
         self._row_dict = {}  # Key is CheckBox, value is a Widget
         self._button_dict = {}  # Key is Button, value is CheckBox
@@ -110,6 +113,36 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
         self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
         self._ui.widgetZinc.selection_updated.connect(self._selection_updated)
+
+        # TODO: Update item map when items moved.
+        self._ui.groupListView.item_moved.connect(self._update_row_item)
+
+    # TODO: I don't like this... :(
+    #   I think theres a good chance it's not going to work because the source item doesn't exists...
+    #   ...
+    #   Maybe it will work...?
+    def _update_row_item(self, source_item, target_item):
+
+        # TODO: REMOVE:
+        #   These are both the same object...?!?!?!?!?!?!?!?!?!?!? But with different indexes...!?!??!?!
+        print(f"Source: {source_item, source_item.index()}")
+        print(f"Target: {target_item, target_item.index()}")
+
+        # TODO: Find the source_item in the row_dict...
+        for key in self._row_dict.keys():
+
+            # TODO: REMOVE:
+            import weakref
+            item = self._row_dict[key]
+            print(f"ITEM: {item}")
+            print(f"???: {item.index()}")
+
+            # if self._row_dict[key] is source_item:
+            #
+            #     # TODO: REMOVE:
+            #     print("FOUND!")
+            #
+            #     self._row_dict[key] = target_item
 
     def _setup_field_combo_boxes(self):
         self._ui.pointsFieldComboBox.addItems(self._points_field_list)
@@ -351,6 +384,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._point_group_dict[checked_button].setManaged(False)
         # Remove UI elements.
         item = self._row_dict[checked_button]
+        # TODO: Why is this still giving the error???
+        #   I've replaced the stupid item...it DOES EXIST!!!!!!
         item_widget = self._ui.groupListView.indexWidget(item.index())
         layout = item_widget.layout()
         for i in reversed(range(layout.count())):
