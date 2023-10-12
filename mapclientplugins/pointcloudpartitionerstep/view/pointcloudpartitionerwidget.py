@@ -23,6 +23,9 @@ from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwid
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
 from mapclientplugins.pointcloudpartitionerstep.view.customsceneselection import CustomSceneSelection, MODE_MAP, TYPE_MAP
 
+# TODO: Rename the customlistview file.
+from mapclientplugins.pointcloudpartitionerstep.view.customlistview import GroupModel, TableDelegate
+
 INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
 DEFAULT_STYLE_SHEET = ''
 
@@ -57,6 +60,18 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui = Ui_PointCloudPartitionerWidget()
         self._ui.setupUi(self)
 
+        # TODO: Model for testing purposes.
+        item_model = GroupModel()
+        for row in range(4):
+            item_model.add_group(f"Group_{row}")
+
+        # TODO: Put this in its own method...?
+        self._ui.groupTableView.setModel(item_model)
+        self._ui.groupTableView.setItemDelegate(TableDelegate(self._ui.groupTableView))
+        self._ui.groupTableView.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        self._ui.groupTableView.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self._ui.groupTableView.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Fixed)
+
         self._callback = None
         self._location = None
         self._input_hash = None
@@ -70,9 +85,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._surfaces_field_list = ["---"]
         self._connected_sets = []
         self._progress_dialog = None
-
-        # TODO: Why do we actually need all of these?
-        #   - to generate unique identifiers
 
         self._check_box_dict = {}  # Key is LineEdit, value is CheckBox.
         self._row_dict = {}  # Key is CheckBox, value is a Widget
@@ -113,36 +125,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
         self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
         self._ui.widgetZinc.selection_updated.connect(self._selection_updated)
-
-        # TODO: Update item map when items moved.
-        self._ui.groupListView.item_moved.connect(self._update_row_item)
-
-    # TODO: I don't like this... :(
-    #   I think theres a good chance it's not going to work because the source item doesn't exists...
-    #   ...
-    #   Maybe it will work...?
-    def _update_row_item(self, source_item, target_item):
-
-        # TODO: REMOVE:
-        #   These are both the same object...?!?!?!?!?!?!?!?!?!?!? But with different indexes...!?!??!?!
-        print(f"Source: {source_item, source_item.index()}")
-        print(f"Target: {target_item, target_item.index()}")
-
-        # TODO: Find the source_item in the row_dict...
-        for key in self._row_dict.keys():
-
-            # TODO: REMOVE:
-            import weakref
-            item = self._row_dict[key]
-            print(f"ITEM: {item}")
-            print(f"???: {item.index()}")
-
-            # if self._row_dict[key] is source_item:
-            #
-            #     # TODO: REMOVE:
-            #     print("FOUND!")
-            #
-            #     self._row_dict[key] = target_item
 
     def _setup_field_combo_boxes(self):
         self._ui.pointsFieldComboBox.addItems(self._points_field_list)

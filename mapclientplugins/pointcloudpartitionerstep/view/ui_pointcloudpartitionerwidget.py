@@ -15,10 +15,11 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox,
-    QDoubleSpinBox, QGridLayout, QGroupBox, QHBoxLayout,
-    QLabel, QPushButton, QSizePolicy, QSpacerItem,
-    QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QAbstractScrollArea, QApplication, QCheckBox,
+    QComboBox, QDoubleSpinBox, QGridLayout, QGroupBox,
+    QHBoxLayout, QHeaderView, QLabel, QPushButton,
+    QSizePolicy, QSpacerItem, QTableView, QVBoxLayout,
+    QWidget)
 
 from mapclientplugins.pointcloudpartitionerstep.view.customlistview import CustomListView
 from mapclientplugins.pointcloudpartitionerstep.view.zincpointcloudpartitionerwidget import ZincPointCloudPartitionerWidget
@@ -27,7 +28,7 @@ class Ui_PointCloudPartitionerWidget(object):
     def setupUi(self, PointCloudPartitionerWidget):
         if not PointCloudPartitionerWidget.objectName():
             PointCloudPartitionerWidget.setObjectName(u"PointCloudPartitionerWidget")
-        PointCloudPartitionerWidget.resize(884, 730)
+        PointCloudPartitionerWidget.resize(884, 826)
         self.verticalLayout_10 = QVBoxLayout(PointCloudPartitionerWidget)
         self.verticalLayout_10.setObjectName(u"verticalLayout_10")
         self.groupBox = QGroupBox(PointCloudPartitionerWidget)
@@ -51,6 +52,22 @@ class Ui_PointCloudPartitionerWidget(object):
         self.groupListView.setDragDropMode(QAbstractItemView.InternalMove)
 
         self.verticalLayout_4.addWidget(self.groupListView)
+
+        self.groupTableView = QTableView(self.groupBox_2)
+        self.groupTableView.setObjectName(u"groupTableView")
+        self.groupTableView.setStyleSheet(u"QTableView { padding: 2px; }\n"
+"QTableView::item { padding: 3px; }")
+        self.groupTableView.setSizeAdjustPolicy(QAbstractScrollArea.AdjustIgnored)
+        self.groupTableView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.groupTableView.setShowGrid(False)
+        self.groupTableView.horizontalHeader().setVisible(False)
+        self.groupTableView.horizontalHeader().setMinimumSectionSize(20)
+        self.groupTableView.horizontalHeader().setDefaultSectionSize(80)
+        self.groupTableView.horizontalHeader().setHighlightSections(False)
+        self.groupTableView.verticalHeader().setVisible(False)
+        self.groupTableView.verticalHeader().setHighlightSections(False)
+
+        self.verticalLayout_4.addWidget(self.groupTableView)
 
         self.pushButtonCreateGroup = QPushButton(self.groupBox_2)
         self.pushButtonCreateGroup.setObjectName(u"pushButtonCreateGroup")
