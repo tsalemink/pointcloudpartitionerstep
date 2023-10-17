@@ -11,6 +11,18 @@ class GroupItem(object):
         self.name = name
 
 
+class GroupTableView(QtWidgets.QTableView):
+
+    def dropEvent(self, event):
+        super().dropEvent(event)
+
+        source_index = self.selectedIndexes()[0].row()
+        target_index = self.indexAt(event.pos()).row()
+
+        self.model().move_row(source_index, target_index)
+        event.accept()
+
+
 class GroupModel(QtCore.QAbstractTableModel):
 
     def __init__(self, parent=None):
@@ -18,6 +30,16 @@ class GroupModel(QtCore.QAbstractTableModel):
 
         self.groups = []
         self.selected_group = None
+
+    def flags(self, index):
+        if not index.isValid():
+            return QtCore.Qt.ItemFlag.ItemIsDropEnabled
+        if index.row() < len(self.groups):
+            return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsDragEnabled
+        return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsEditable
+
+    def supportedDropActions(self):
+        return QtCore.Qt.DropAction.MoveAction
 
     def rowCount(self, parent=QtCore.QModelIndex()):
         return len(self.groups)
@@ -46,30 +68,41 @@ class GroupModel(QtCore.QAbstractTableModel):
 
         return QtCore.QAbstractTableModel.setData(self, index, value, role)
 
-    def add_group(self, name):
+    def add_group(self, name, row=None):
+        if row is None:
+            row = self.rowCount()
+
         names_in_use = _names_in_use(self)
         name = _next_available_name(names_in_use, name)
 
         group = GroupItem(name)
-        self.beginInsertRows(QtCore.QModelIndex(), self.rowCount(), self.rowCount())
-        self.groups.append(group)
+        self.beginInsertRows(QtCore.QModelIndex(), row, row)
+        self.groups.insert(row, group)
         self.endInsertRows()
+        self.layoutChanged.emit()
 
         return name
 
-    def remove_group(self):
-        if self.selected_group:
-            name = self.selected_group.name
+    def remove_group(self, row=None):
+        if row is None:
+            if not self.selected_group:
+                return None
             row = self.groups.index(self.selected_group)
-
-            self.beginRemoveRows(QtCore.QModelIndex(), row, row)
-            self.groups.remove(self.selected_group)
-            self.endRemoveRows()
-            self.selected_group = None
-
-            return name
+            name = self.selected_group.name
         else:
-            return None
+            name = self.groups[row].name
+
+        self.beginRemoveRows(QtCore.QModelIndex(), row, row)
+        del self.groups[row]
+        self.endRemoveRows()
+        self.layoutChanged.emit()
+        self.selected_group = None
+
+        return name
+
+    def move_row(self, source_row, target_row):
+        name = self.remove_group(source_row)
+        self.add_group(name, target_row)
 
     def get_group_from_index(self, index):
         if index:

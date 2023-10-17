@@ -18,16 +18,16 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
 from PySide6.QtWidgets import (QAbstractItemView, QAbstractScrollArea, QApplication, QCheckBox,
     QComboBox, QDoubleSpinBox, QGridLayout, QGroupBox,
     QHBoxLayout, QHeaderView, QLabel, QPushButton,
-    QSizePolicy, QSpacerItem, QTableView, QVBoxLayout,
-    QWidget)
+    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
 
+from mapclientplugins.pointcloudpartitionerstep.view.grouptableview import GroupTableView
 from mapclientplugins.pointcloudpartitionerstep.view.zincpointcloudpartitionerwidget import ZincPointCloudPartitionerWidget
 
 class Ui_PointCloudPartitionerWidget(object):
     def setupUi(self, PointCloudPartitionerWidget):
         if not PointCloudPartitionerWidget.objectName():
             PointCloudPartitionerWidget.setObjectName(u"PointCloudPartitionerWidget")
-        PointCloudPartitionerWidget.resize(884, 730)
+        PointCloudPartitionerWidget.resize(884, 761)
         self.verticalLayout_10 = QVBoxLayout(PointCloudPartitionerWidget)
         self.verticalLayout_10.setObjectName(u"verticalLayout_10")
         self.groupBox = QGroupBox(PointCloudPartitionerWidget)
@@ -45,17 +45,16 @@ class Ui_PointCloudPartitionerWidget(object):
         self.groupBox_2.setSizePolicy(sizePolicy)
         self.verticalLayout_4 = QVBoxLayout(self.groupBox_2)
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.verticalLayout_5 = QVBoxLayout()
-        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
-
-        self.verticalLayout_4.addLayout(self.verticalLayout_5)
-
-        self.groupTableView = QTableView(self.groupBox_2)
+        self.groupTableView = GroupTableView(self.groupBox_2)
         self.groupTableView.setObjectName(u"groupTableView")
+        self.groupTableView.setAcceptDrops(True)
         self.groupTableView.setStyleSheet(u"QTableView { padding: 3px; }\n"
 "QTableView::item { padding: 3px; }")
         self.groupTableView.setSizeAdjustPolicy(QAbstractScrollArea.AdjustIgnored)
-        self.groupTableView.setSelectionMode(QAbstractItemView.NoSelection)
+        self.groupTableView.setDragEnabled(True)
+        self.groupTableView.setDragDropMode(QAbstractItemView.InternalMove)
+        self.groupTableView.setDefaultDropAction(Qt.MoveAction)
+        self.groupTableView.setSelectionMode(QAbstractItemView.SingleSelection)
         self.groupTableView.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.groupTableView.setShowGrid(False)
         self.groupTableView.horizontalHeader().setVisible(False)
