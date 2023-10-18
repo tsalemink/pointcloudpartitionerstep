@@ -18,9 +18,26 @@ class GroupTableView(QtWidgets.QTableView):
 
         source_index = self.selectedIndexes()[0].row()
         target_index = self.indexAt(event.pos()).row()
+        if not 0 <= target_index < self.model().rowCount():
+            return
 
         self.model().move_row(source_index, target_index)
         event.accept()
+
+        # TODO: If changing the line-edit and then changing it back fixes the issue,
+        #   I don't understand why just setting the line-edit doesn't work...
+        for row in range(self.model().rowCount()):
+            item = self.model().groups[row]
+            index = self.model().index(row, 1)
+            # TODO: line_edit is None...
+            #   So I probably can't use the delegate methods either...
+            line_edit = self.indexWidget(index)
+
+            print(f"name: {item.name}")
+            print(f"text: {line_edit.text()}")
+
+            line_edit.setText(item.name)
+            line_edit.textEdited.emit(item.name)
 
 
 class GroupModel(QtCore.QAbstractTableModel):
@@ -101,8 +118,22 @@ class GroupModel(QtCore.QAbstractTableModel):
         return name
 
     def move_row(self, source_row, target_row):
-        name = self.remove_group(source_row)
-        self.add_group(name, target_row)
+        # name = self.remove_group(source_row)
+        # self.add_group(name, target_row)
+
+        # TODO: ALTERNATE ATTEMPT.
+        # row_a, row_b = max(source_row, target_row), min(source_row, target_row)
+        # self.beginMoveRows(QtCore.QModelIndex(), row_a, row_a, QtCore.QModelIndex(), row_b)
+        self.beginMoveRows(QtCore.QModelIndex(), source_row, source_row, QtCore.QModelIndex(), target_row)
+        self.groups.insert(target_row, self.groups.pop(source_row))
+        self.endMoveRows()
+        # self.layoutChanged.emit()
+
+        # TODO: REMOVE:
+        print(f"GROUP: {self.groups[target_row]}")
+        print(f"GROUP-NAME: {self.groups[target_row].name}")
+
+        # TODO: What id we emit a signal the the PCPWidget connects to focus the ZincWidget...???
 
     def get_group_from_index(self, index):
         if index:
@@ -131,7 +162,9 @@ class TableDelegate(QtWidgets.QStyledItemDelegate):
             self._check_box_group.addButton(editor)
         elif index.column() == 1:
             editor = QtWidgets.QLineEdit(parent)
+            # TODO: See if this makes a difference...nope
             editor.textEdited.connect(lambda: self._name_changed(model, item))
+            # editor.textChanged.connect(lambda: self._name_changed(model, item))
         elif index.column() == 2:
             editor = QtWidgets.QPushButton("sel.", parent)
             editor.clicked.connect(lambda: self._button_clicked(item))
@@ -170,6 +203,11 @@ class TableDelegate(QtWidgets.QStyledItemDelegate):
         new_name = self._validate_line_edit(model, item)
         previous_name = item.name
         item.name = new_name
+
+        # TODO: REMOVE:
+        print(f"ITEM: {item}")
+        print(f"Old-NAME: {previous_name}")
+        print(f"New-NAME: {new_name}")
 
         self.name_changed.emit(previous_name, new_name)
 
