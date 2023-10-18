@@ -18,6 +18,8 @@ class GroupTableView(QtWidgets.QTableView):
 
         source_index = self.selectedIndexes()[0].row()
         target_index = self.indexAt(event.pos()).row()
+        if not 0 <= target_index < self.model().rowCount():
+            return
 
         self.model().move_row(source_index, target_index)
         event.accept()
@@ -104,6 +106,14 @@ class GroupModel(QtCore.QAbstractTableModel):
         name = self.remove_group(source_row)
         self.add_group(name, target_row)
 
+        # TODO: ALTERNATE ATTEMPT.
+        # # row_a, row_b = max(source_row, target_row), min(source_row, target_row)
+        # # self.beginMoveRows(QtCore.QModelIndex(), row_a, row_a, QtCore.QModelIndex(), row_b)
+        # self.beginMoveRows(QtCore.QModelIndex(), source_row, source_row, QtCore.QModelIndex(), target_row)
+        # self.groups.insert(target_row, self.groups.pop(source_row))
+        # self.endMoveRows()
+        # # self.layoutChanged.emit()
+
     def get_group_from_index(self, index):
         if index:
             return self.groups[index.row()]
@@ -170,6 +180,11 @@ class TableDelegate(QtWidgets.QStyledItemDelegate):
         new_name = self._validate_line_edit(model, item)
         previous_name = item.name
         item.name = new_name
+
+        # TODO: REMOVE:
+        print(f"ITEM: {item}")
+        print(f"Old-NAME: {previous_name}")
+        print(f"New-NAME: {new_name}")
 
         self.name_changed.emit(previous_name, new_name)
 
