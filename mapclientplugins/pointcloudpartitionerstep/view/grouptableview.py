@@ -78,14 +78,12 @@ class GroupModel(QtCore.QAbstractTableModel):
 
     def end_add_group(self):
         self.endInsertRows()
-        # self.layoutChanged.emit()
 
     def begin_remove_group(self, start_row, end_row=None):
         self.beginRemoveRows(QtCore.QModelIndex(), start_row, start_row if end_row is None else end_row)
 
     def end_remove_group(self):
         self.endRemoveRows()
-        # self.layoutChanged.emit()
 
     def move_row(self, source_row, target_row):
         self._model_source.move_group_data(source_row, target_row)
