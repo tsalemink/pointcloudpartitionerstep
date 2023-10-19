@@ -19,14 +19,11 @@ def _set_graphic_point_size(graphic, size):
 
 
 def _create_text_graphics(scene, coordinate_field):
-    scene.beginChange()
-
-    graphics_points = scene.createGraphicsPoints()
-    graphics_points.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
-    graphics_points.setCoordinateField(coordinate_field)
-    graphics_points.setScenecoordinatesystem(SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT)
-
-    scene.endChange()
+    with ChangeManager(scene):
+        graphics_points = scene.createGraphicsPoints()
+        graphics_points.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
+        graphics_points.setCoordinateField(coordinate_field)
+        graphics_points.setScenecoordinatesystem(SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT)
 
     return graphics_points
 
@@ -64,7 +61,7 @@ class PointCloudPartitionerScene(object):
 
     def __init__(self, model):
         self._model = model
-        self._group_graphics_dict = {}
+        self._group_graphics = []
         self._label_graphics = None
         self._surface_graphics = None
         self._node_graphics = None
@@ -84,6 +81,9 @@ class PointCloudPartitionerScene(object):
 
             self._node_graphics = self.create_point_graphics(scene, None, None, None, Graphics.SELECT_MODE_DRAW_UNSELECTED)
             self._selection_graphics = self.create_point_graphics(scene, None, None, None, Graphics.SELECT_MODE_DRAW_SELECTED)
+
+    def add_group_graphic(self, graphic):
+        self._group_graphics.append(graphic)
 
     def _setup_label_graphic(self):
         normalised_region = self._model.get_label_region()
@@ -106,9 +106,7 @@ class PointCloudPartitionerScene(object):
             if subgroup_field:
                 graphic.setSubgroupField(subgroup_field)
                 graphic.setMaterial(material)
-                if self._group_graphics_dict:
-                    scene.moveGraphicsBefore(graphic, list(self._group_graphics_dict.values())[-1])
-                self._group_graphics_dict[subgroup_field.getName()] = graphic
+                graphic.setName(subgroup_field.getName())
 
             attributes = graphic.getGraphicspointattributes()
             attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_SPHERE)
@@ -120,21 +118,17 @@ class PointCloudPartitionerScene(object):
         coordinate_field = self._model.get_point_cloud_coordinates()
         self._node_graphics.setCoordinateField(coordinate_field)
         self._selection_graphics.setCoordinateField(coordinate_field)
-        for graphic in self._group_graphics_dict.values():
+        for graphic in self._group_graphics:
             graphic.setCoordinateField(coordinate_field)
 
     def update_mesh_coordinates(self):
         coordinate_field = self._model.get_mesh_coordinates()
         self._surface_graphics.setCoordinateField(coordinate_field)
 
-    def update_graphics_name(self, old_name, new_name):
-        self._group_graphics_dict[new_name] = self._group_graphics_dict[old_name]
-        del self._group_graphics_dict[old_name]
-
-    def delete_point_graphics(self, group_name):
+    def delete_point_graphics(self, row):
         scene = self._model.get_points_region().getScene()
-        scene.removeGraphics(self._group_graphics_dict[group_name])
-        del self._group_graphics_dict[group_name]
+        scene.removeGraphics(self._group_graphics[row])
+        del self._group_graphics[row]
 
     def set_pixel_scale(self, scale):
         self._pixel_scale = scale
@@ -148,12 +142,47 @@ class PointCloudPartitionerScene(object):
     def _update_graphic_point_size(self):
         _set_graphic_point_size(self._node_graphics, self._data_point_base_size * self._pixel_scale)
         _set_graphic_point_size(self._selection_graphics, self._data_point_base_size * self._pixel_scale)
-        for graphic in self._group_graphics_dict.values():
+        for graphic in self._group_graphics:
             _set_graphic_point_size(graphic, self._data_point_base_size * self._pixel_scale)
 
     def update_graphics_materials(self, materials):
-        for (graphic, material) in zip(self._group_graphics_dict.values(), materials.values()):
+        for (graphic, material) in zip(self._group_graphics, materials):
             graphic.setMaterial(material)
+
+    def change_graphics_order(self, names):
+        points_region = self._model.get_points_region()
+        scene = points_region.getScene()
+
+        print(names)
+        # names.reverse()
+
+        def _list_scene_graphics():
+            g = scene.getFirstGraphics()
+            print("graphics listing:")
+            while g.isValid():
+                print(g.getName())
+                g = scene.getNextGraphics(g)
+
+        # print(names)
+        print("before:")
+        _list_scene_graphics()
+        index = len(names) - 1
+        graphic_ref = scene.findGraphicsByName(names[index])
+        with ChangeManager(scene):
+            print("movement:")
+            while index > 0:
+                graphic = scene.findGraphicsByName(names[index - 1])
+                print("move:", graphic.getName(), "before:", graphic_ref.getName())
+                scene.moveGraphicsBefore(graphic, graphic_ref)
+                print("mid:")
+                _list_scene_graphics()
+                graphic_ref = graphic
+                index -= 1
+
+        print("after:")
+        _list_scene_graphics()
+        print()
+        print()
 
     def update_label_text(self, handler_label):
         attributes = self._label_graphics.getGraphicspointattributes()

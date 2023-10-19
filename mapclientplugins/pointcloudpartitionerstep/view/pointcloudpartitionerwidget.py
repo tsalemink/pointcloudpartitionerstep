@@ -22,7 +22,7 @@ from cmlibs.zinc.material import Material
 from mapclientplugins.pointcloudpartitionerstep.view.ui_pointcloudpartitionerwidget import Ui_PointCloudPartitionerWidget
 from mapclientplugins.pointcloudpartitionerstep.scene.pointcloudpartitionerscene import PointCloudPartitionerScene
 from mapclientplugins.pointcloudpartitionerstep.view.customsceneselection import CustomSceneSelection, MODE_MAP, TYPE_MAP
-from mapclientplugins.pointcloudpartitionerstep.view.grouptableview import GroupModel, TableDelegate
+from mapclientplugins.pointcloudpartitionerstep.view.grouptableview import GroupModel
 
 INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
 DEFAULT_STYLE_SHEET = ''
@@ -57,6 +57,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         self._ui = Ui_PointCloudPartitionerWidget()
         self._ui.setupUi(self)
+        self._ui.pushButtonDeleteGroup.setEnabled(False)
 
         self._callback = None
         self._location = None
@@ -72,8 +73,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._connected_sets = []
         self._progress_dialog = None
 
-        self._group_dict = {}   # Key is group-name, value is Zinc-group.
-        self._rgb_dict = {}     # Key is group-name, value is RGB-value.
+        self._groups = []
+        self._group_materials = []
 
         self._setup_table_view()
         self._setup_selection_mode_combo_box()
@@ -107,8 +108,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
         self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
         self._ui.widgetZinc.selection_updated.connect(self._selection_updated)
-        self._ui.groupTableView.itemDelegate().button_clicked.connect(self._add_group_points_to_selection)
-        self._ui.groupTableView.itemDelegate().name_changed.connect(self._group_name_changed)
+        self._ui.groupTableView.itemDelegateForColumn(1).button_clicked.connect(self._add_group_points_to_selection)
 
     def _setup_field_combo_boxes(self):
         self._ui.pointsFieldComboBox.addItems(self._points_field_list)
@@ -132,11 +132,13 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         # self._ui.widgetZinc.view_all()
 
     def _setup_table_view(self):
-        self._ui.groupTableView.setModel(GroupModel(self._ui.groupTableView))
-        self._ui.groupTableView.setItemDelegate(TableDelegate(self._ui.groupTableView))
-        self._ui.groupTableView.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
-        self._ui.groupTableView.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
-        self._ui.groupTableView.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Fixed)
+        self._ui.groupTableView.setModel(GroupModel(self, self._ui.groupTableView))
+        # self._ui.groupTableView.setItemDelegate(TableDelegate(self._ui.groupTableView))
+        # self._ui.groupTableView.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+        self._ui.groupTableView.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+        self._ui.groupTableView.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Fixed)
+        selection_model = self._ui.groupTableView.selectionModel()
+        selection_model.selectionChanged.connect(self._group_selection_changed)
 
     def _setup_selection_mode_combo_box(self):
         self._ui.comboBoxSelectionMode.addItems(MODE_MAP.keys())
@@ -183,8 +185,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             field = field_iter.next()
 
     def clear(self):
-        for group_name in self._group_dict.keys():
-            self._remove_point_group(group_name)
+        while len(self._groups):
+            self._remove_point_group(0)
 
         self._update_node_graphics_subgroup()
 
@@ -193,6 +195,10 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def get_output_file(self):
         return os.path.join(self._location, "nodes-with-groups.exf")
+
+    def _group_selection_changed(self, new_selection):
+        selection = len(new_selection.indexes()) > 0
+        self._ui_update_selection_dependent_buttons(selection)
 
     def _settings_file(self):
         return os.path.join(self._location, 'settings.json')
@@ -203,44 +209,79 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
         self._model.get_points_region().writeFile(self.get_output_file())
 
-    def _group_name_changed(self, old_name, new_name):
-        if old_name != new_name:
-            self._group_dict[new_name] = self._group_dict[old_name]
-            self._rgb_dict[new_name] = self._rgb_dict[old_name]
-            del self._group_dict[old_name]
-            del self._rgb_dict[old_name]
-            self._group_dict[new_name].setName(new_name)
-            self._scene.update_graphics_name(old_name, new_name)
+    def group_count(self):
+        return len(self._groups)
+
+    def group_data(self, row, column):
+        if column == 0:
+            return self._groups[row].getName()
+
+    def set_group_data(self, row, column, value):
+        if column == 0:
+            self._groups[row].setName(value)
+
+    def move_group_data(self, source_row, target_row):
+        model = self._ui.groupTableView.model()
+        target_row = len(self._groups) - 1 if target_row == -1 else target_row
+        model.layoutAboutToBeChanged.emit()
+        self._groups.insert(target_row, self._groups.pop(source_row))
+        # self._group_materials.insert(target_row, self._group_materials.pop(source_row))
+        self._scene.update_graphics_materials(self._group_materials)
+
+        start_row = source_row
+        end_row = target_row
+        if target_row < source_row:
+            start_row = target_row
+            end_row = source_row
+
+        names = [g.getName() for g in self._groups[start_row:end_row + 1]]
+        self._scene.change_graphics_order(names)
+        model.layoutChanged.emit()
+
+    def _next_available_name(self, name=None):
+        i = 1
+        names = [g.getName() for g in self._groups]
+        stem_name = "Group"
+        unique_name = f"{stem_name}_1" if name is None else name
+        name = stem_name if name is None else name
+
+        while unique_name in names:
+            unique_name = f"{name}_{i}"
+            i += 1
+
+        return unique_name
 
     def _add_point_group(self, group=None):
         model = self._ui.groupTableView.model()
-        name = model.add_group(group.getName() if group is not None else None)
 
         if group is None:
+            name = self._next_available_name()
             group = self._field_module.createFieldGroup()
             group.setName(name)
 
+        model.begin_add_group()
         self._register_point_group(group)
+        model.end_add_group()
 
     def _create_point_group(self):
         self._add_point_group()
         self._update_node_graphics_subgroup()
 
     def _register_point_group(self, group):
-        group_name = group.getName()
-        self._group_dict[group_name] = group
-        self._rgb_dict[group_name] = None
+        self._groups.append(group)
+        self._group_materials.append(None)
         self._update_color_map()
-        self._scene.update_graphics_materials(self._rgb_dict)
+        self._scene.update_graphics_materials(self._group_materials)
         scene = self._model.get_points_region().getScene()
         coordinates = self._model.get_point_cloud_coordinates()
-        material = self._rgb_dict[group_name]
-        self._scene.create_point_graphics(scene, coordinates, group, material)
+        material = self._group_materials[-1]
+        graphic = self._scene.create_point_graphics(scene, coordinates, group, material)
+        self._scene.add_group_graphic(graphic)
 
     def _update_node_graphics_subgroup(self):
         or_group = None
         group_count = 0
-        for group in self._group_dict.values():
+        for group in self._groups:
             group_count += 1
             if group_count == 1:
                 or_group = group
@@ -253,26 +294,33 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             tmp = self._field_module.createFieldNot(or_group)
             self._scene.set_node_graphics_subgroup_field(tmp)
 
+    def _selected_row(self):
+        selection_model = self._ui.groupTableView.selectionModel()
+        index = selection_model.currentIndex()
+        return index.row()
+
     def _remove_associated_point_group(self):
         model = self._ui.groupTableView.model()
-        group_name = model.remove_group()
-        if group_name:
-            self._remove_points_from_group(group_name)
-            self._remove_point_group(group_name)
-            self._update_node_graphics_subgroup()
+        row = self._selected_row()
+        model.begin_remove_group(row)
+        self._remove_points_from_group(row)
+        self._remove_point_group(row)
+        self._update_node_graphics_subgroup()
+        model.end_remove_group()
+        self._ui.groupTableView.selectionModel().clear()
 
-    def _remove_point_group(self, group_name):
+    def _remove_point_group(self, row):
         # Schedule the group for deletion.
-        self._group_dict[group_name].setManaged(False)
+        self._groups[row].setManaged(False)
 
-        # Remove dictionary entries.
-        del self._group_dict[group_name]
-        del self._rgb_dict[group_name]
+        # Remove related entries.
+        del self._groups[row]
+        del self._group_materials[row]
 
         # Update the scene.
         self._update_color_map()
-        self._scene.update_graphics_materials(self._rgb_dict)
-        self._scene.delete_point_graphics(group_name)
+        self._scene.update_graphics_materials(self._group_materials)
+        self._scene.delete_point_graphics(row)
 
     def _update_color_map(self):
         def get_distinct_colors(n):
@@ -280,21 +328,20 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             return [list(colorsys.hsv_to_rgb(hue_partition * value, 1.0, 1.0)) for value in range(0, n)]
 
         material_module = self._model.get_points_region().getScene().getMaterialmodule()
-        colors = get_distinct_colors(len(self._rgb_dict) + 1)
+        colors = get_distinct_colors(len(self._group_materials) + 1)
         colors.pop(0)
+        self._group_materials = []
         for i in range(len(colors)):
             material = material_module.createMaterial()
             material.setManaged(True)
             material.setAttributeReal3(Material.ATTRIBUTE_AMBIENT, colors[i])
             material.setAttributeReal3(Material.ATTRIBUTE_DIFFUSE, colors[i])
             material.setAttributeReal3(Material.ATTRIBUTE_SPECULAR, [0.1, 0.1, 0.1])
-            self._rgb_dict[list(self._rgb_dict.keys())[i]] = material
+            self._group_materials.append(material)
 
-    def _add_group_points_to_selection(self, group_name):
-        selected_group = self._group_dict.get(group_name, None)
+    def _add_group_points_to_selection(self, row):
+        selected_group = self._groups[row]
         nodeset_group = self._get_checked_nodeset_group(selected_group)
-        if not nodeset_group:
-            return
 
         selected_nodeset_group = self._get_node_selection_group()
         scene = self._field_module.getRegion().getScene()
@@ -308,13 +355,8 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._selection_updated()
 
     def _add_selected_points_to_group(self):
-        selected_group = self._get_selected_group()
-        if not selected_group:
-            return
-        nodeset_group = self._get_checked_nodeset_group(selected_group)
-        if not nodeset_group.isValid():
-            return
-
+        selected_group = self._groups[self._selected_row()]
+        nodeset_group = selected_group.getOrCreateNodesetGroup(self._model.get_data_points())
         self._add_points_to_group(nodeset_group)
         self._selection_updated()
 
@@ -334,21 +376,17 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def _remove_selected_points_from_group(self):
         selection_group = self._model.get_point_selection_group()
         selected_nodeset_group = self._get_node_selection_group()
-        group_name = self._get_selected_group_name()
+        row = self._selected_row()
+        self._remove_points_from_group(row, selection_group, selected_nodeset_group)
+        self._selection_updated()
 
-        if group_name:
-            self._remove_points_from_group(group_name, selection_group, selected_nodeset_group)
-            self._selection_updated()
-
-    def _remove_points_from_group(self, group_name, field_group=None, selected_nodeset_group=None):
-        checked_group = self._group_dict.get(group_name, None)
-        nodeset_group = self._get_checked_nodeset_group(checked_group)
-        if not nodeset_group:
-            return
+    def _remove_points_from_group(self, row, field_group=None, selected_nodeset_group=None):
+        group = self._groups[row]
+        nodeset_group = group.getOrCreateNodesetGroup(self._model.get_data_points())
 
         # If the method was called without a selection group, remove all nodes.
         if field_group is None or selected_nodeset_group is None:
-            field_group = checked_group
+            field_group = group
             selected_nodeset_group = nodeset_group
 
         # Remove the selected Nodes from the chosen group.
@@ -474,14 +512,16 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             self._selection_updated()
 
     def _selection_updated(self):
-        self._node_selection_updated()
+        self._ui_update_selection_dependent_buttons()
         self._surface_selection_updated()
 
-    def _node_selection_updated(self):
+    def _ui_update_selection_dependent_buttons(self, group_selection=None):
+        group_selection = self._ui.pushButtonDeleteGroup.isEnabled() if group_selection is None else group_selection
         node_selection_group = self._get_node_selection_group()
         nodes_selected = node_selection_group is not None and node_selection_group.getSize()
-        self._ui.pushButtonAddToGroup.setEnabled(nodes_selected)
-        self._ui.pushButtonRemoveFromGroup.setEnabled(nodes_selected)
+        self._ui.pushButtonAddToGroup.setEnabled(nodes_selected and group_selection)
+        self._ui.pushButtonRemoveFromGroup.setEnabled(nodes_selected and group_selection)
+        self._ui.pushButtonDeleteGroup.setEnabled(group_selection)
 
     def _surface_selection_updated(self):
         mesh_selection_group = self._get_mesh_selection_group()
@@ -560,12 +600,12 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
     def _get_selected_group_name(self):
         model = self._ui.groupTableView.model()
 
-        if len(self._group_dict) == 0:
+        if len(self._groups) == 0:
             QtWidgets.QMessageBox.information(self, 'No Point Group Created', 'No point group created. Please create a point group first '
                                               'before attempting to add points.', QtWidgets.QMessageBox.StandardButton.Ok)
             return None
         elif not model.selected_group:
-            dlg = GroupSelectionDialog(self, self._group_dict.keys())
+            dlg = GroupSelectionDialog(self, self._groups)
             if dlg.exec_():
                 return dlg.get_group_name()
             else:

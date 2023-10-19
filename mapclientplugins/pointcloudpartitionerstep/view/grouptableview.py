@@ -5,251 +5,106 @@ INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
 DEFAULT_STYLE_SHEET = ''
 
 
-class GroupItem(object):
-    def __init__(self, name):
-        self.selected = False
-        self.name = name
-
-
 class GroupTableView(QtWidgets.QTableView):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setItemDelegateForColumn(1, PushButtonDelegate(self))
+        self.setDragEnabled(True)
+        self.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
+        self.viewport().setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
 
     def dropEvent(self, event):
         super().dropEvent(event)
 
         source_index = self.selectedIndexes()[0].row()
         target_index = self.indexAt(event.pos()).row()
-        if not 0 <= target_index < self.model().rowCount():
-            return
+        print("move from:", source_index, target_index)
 
         self.model().move_row(source_index, target_index)
         event.accept()
 
-        # TODO: If changing the line-edit and then changing it back fixes the issue,
-        #   I don't understand why just setting the line-edit doesn't work...
-        for row in range(self.model().rowCount()):
-            item = self.model().groups[row]
-            index = self.model().index(row, 1)
-            # TODO: line_edit is None...
-            #   So I probably can't use the delegate methods either...
-            line_edit = self.indexWidget(index)
-
-            print(f"name: {item.name}")
-            print(f"text: {line_edit.text()}")
-
-            line_edit.setText(item.name)
-            line_edit.textEdited.emit(item.name)
-
 
 class GroupModel(QtCore.QAbstractTableModel):
 
-    def __init__(self, parent=None):
+    def __init__(self, model_source, parent=None):
         super().__init__(parent)
-
-        self.groups = []
-        self.selected_group = None
+        self._model_source = model_source
 
     def flags(self, index):
         if not index.isValid():
             return QtCore.Qt.ItemFlag.ItemIsDropEnabled
-        if index.row() < len(self.groups):
-            return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsDragEnabled
-        return QtCore.Qt.ItemFlag.ItemIsEnabled | QtCore.Qt.ItemFlag.ItemIsEditable
+
+        index_flags = QtCore.Qt.ItemFlag.ItemIsDragEnabled | QtCore.Qt.ItemFlag.ItemIsDropEnabled |super().flags(index)
+        if index.column() == 1:
+            index_flags |= QtCore.Qt.ItemFlag.ItemIsEditable
+
+        return index_flags
 
     def supportedDropActions(self):
         return QtCore.Qt.DropAction.MoveAction
 
     def rowCount(self, parent=QtCore.QModelIndex()):
-        return len(self.groups)
+        return self._model_source.group_count()
 
     def columnCount(self, parent=QtCore.QModelIndex()):
-        return 3
+        return 2
 
     def data(self, index, role=QtCore.Qt.ItemDataRole.DisplayRole):
-        item = self.get_group_from_index(index)
+        if not index.isValid():
+            return None
 
-        if role == QtCore.Qt.ItemDataRole.DisplayRole:
-            if index.column() == 1:
-                return item.name
+        if role == QtCore.Qt.ItemDataRole.DisplayRole or role == QtCore.Qt.ItemDataRole.EditRole:
+            if index.column() == 0:
+                return self._model_source.group_data(index.row(), index.column())
 
         return None
 
     def setData(self, index, value, role=QtCore.Qt.ItemDataRole.DisplayRole):
-        item = self.get_group_from_index(index)
+        if not index.isValid():
+            return False
 
-        if index.column() == 0:
-            item.selected = value
-            return True
-        elif index.column() == 1:
-            item.name = value
-            return True
+        if role == QtCore.Qt.ItemDataRole.EditRole:
+            if index.column() == 0:
+                self._model_source.set_group_data(index.row(), index.column(), value)
+                return True
 
-        return QtCore.QAbstractTableModel.setData(self, index, value, role)
+        return False
 
-    def add_group(self, name, row=None):
-        if row is None:
-            row = self.rowCount()
-
-        names_in_use = _names_in_use(self)
-        name = _next_available_name(names_in_use, name)
-
-        group = GroupItem(name)
+    def begin_add_group(self):
+        row = self.rowCount()
         self.beginInsertRows(QtCore.QModelIndex(), row, row)
-        self.groups.insert(row, group)
+
+    def end_add_group(self):
         self.endInsertRows()
-        self.layoutChanged.emit()
-
-        return name
-
-    def remove_group(self, row=None):
-        if row is None:
-            if not self.selected_group:
-                return None
-            row = self.groups.index(self.selected_group)
-            name = self.selected_group.name
-        else:
-            name = self.groups[row].name
-
-        self.beginRemoveRows(QtCore.QModelIndex(), row, row)
-        del self.groups[row]
-        self.endRemoveRows()
-        self.layoutChanged.emit()
-        self.selected_group = None
-
-        return name
-
-    def move_row(self, source_row, target_row):
-        # name = self.remove_group(source_row)
-        # self.add_group(name, target_row)
-
-        # TODO: ALTERNATE ATTEMPT.
-        # row_a, row_b = max(source_row, target_row), min(source_row, target_row)
-        # self.beginMoveRows(QtCore.QModelIndex(), row_a, row_a, QtCore.QModelIndex(), row_b)
-        self.beginMoveRows(QtCore.QModelIndex(), source_row, source_row, QtCore.QModelIndex(), target_row)
-        self.groups.insert(target_row, self.groups.pop(source_row))
-        self.endMoveRows()
         # self.layoutChanged.emit()
 
-        # TODO: REMOVE:
-        print(f"GROUP: {self.groups[target_row]}")
-        print(f"GROUP-NAME: {self.groups[target_row].name}")
+    def begin_remove_group(self, start_row, end_row=None):
+        self.beginRemoveRows(QtCore.QModelIndex(), start_row, start_row if end_row is None else end_row)
 
-        # TODO: What id we emit a signal the the PCPWidget connects to focus the ZincWidget...???
+    def end_remove_group(self):
+        self.endRemoveRows()
+        # self.layoutChanged.emit()
 
-    def get_group_from_index(self, index):
-        if index:
-            return self.groups[index.row()]
-        return None
+    def move_row(self, source_row, target_row):
+        self._model_source.move_group_data(source_row, target_row)
 
 
-class TableDelegate(QtWidgets.QStyledItemDelegate):
-    name_changed = QtCore.Signal(str, str)
-    button_clicked = QtCore.Signal(str)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self._check_box_group = QtWidgets.QButtonGroup()
-        self._check_box_group.setExclusive(True)
+class PushButtonDelegate(QtWidgets.QStyledItemDelegate):
+    button_clicked = QtCore.Signal(int)
 
     def createEditor(self, parent, option, index):
-        model = index.model()
-        item = model.get_group_from_index(index)
-
-        if index.column() == 0:
-            editor = QtWidgets.QCheckBox(parent)
-            editor.setSizePolicy(QtWidgets.QSizePolicy.Policy.Maximum, QtWidgets.QSizePolicy.Policy.Maximum)
-            editor.clicked.connect(lambda: self._selection_changed(model, item))
-            self._check_box_group.addButton(editor)
-        elif index.column() == 1:
-            editor = QtWidgets.QLineEdit(parent)
-            # TODO: See if this makes a difference...nope
-            editor.textEdited.connect(lambda: self._name_changed(model, item))
-            # editor.textChanged.connect(lambda: self._name_changed(model, item))
-        elif index.column() == 2:
-            editor = QtWidgets.QPushButton("sel.", parent)
-            editor.clicked.connect(lambda: self._button_clicked(item))
-        else:
-            editor = super().createEditor(parent, option, index)
+        editor = QtWidgets.QPushButton(parent)
+        editor.setText("sel.")
+        editor.clicked.connect(lambda: self.button_clicked.emit(index.row()))
         return editor
-
-    def setEditorData(self, editor, index):
-        if index.column() == 0:
-            value = index.data(QtCore.Qt.ItemDataRole.CheckStateRole)
-            editor.setChecked(value == QtCore.Qt.CheckState.Checked)
-        elif index.column() == 1:
-            editor.setText(index.data())
-
-        editor.setFocus(QtCore.Qt.FocusReason.OtherFocusReason)
-
-    def setModelData(self, editor, model, index):
-        if index.column() == 0:
-            value = QtCore.Qt.CheckState.Checked if editor.isChecked() else QtCore.Qt.CheckState.Unchecked
-            model.setData(index, value, QtCore.Qt.ItemDataRole.CheckStateRole)
-        elif index.column() == 1:
-            model.setData(index, editor.text())
 
     def paint(self, painter, option, index):
         if isinstance(self.parent(), QtWidgets.QAbstractItemView):
             self.parent().openPersistentEditor(index)
-        QtWidgets.QStyledItemDelegate.paint(self, painter, option, index)
 
-    def _selection_changed(self, model, item):
-        if self._check_box_group.checkedButton():
-            model.selected_group = item
-        else:
-            model.selected_group = None
+        super().paint(painter, option, index)
 
-    def _name_changed(self, model, item):
-        new_name = self._validate_line_edit(model, item)
-        previous_name = item.name
-        item.name = new_name
-
-        # TODO: REMOVE:
-        print(f"ITEM: {item}")
-        print(f"Old-NAME: {previous_name}")
-        print(f"New-NAME: {new_name}")
-
-        self.name_changed.emit(previous_name, new_name)
-
-    def _validate_line_edit(self, model, item):
-        index = model.index(model.groups.index(item), 1)
-        line_edit = self.parent().indexWidget(index)
-
-        name = line_edit.text()
-        names_in_use = _names_in_use(model, item)
-
-        if name in names_in_use:
-            name = _next_available_name(names_in_use, name)
-            line_edit.setText(name)
-            line_edit.setStyleSheet(INVALID_STYLE_SHEET)
-            line_edit.setToolTip("Warning: group identifier is a duplicate.")
-        else:
-            line_edit.setStyleSheet(DEFAULT_STYLE_SHEET)
-            line_edit.setToolTip("")
-
-        return name
-
-    def _button_clicked(self, item):
-        self.button_clicked.emit(item.name)
-
-
-def _names_in_use(model, group_item=None):
-    names = []
-    for row in range(model.rowCount()):
-        item = model.get_group_from_index(model.index(row, 1))
-        if item is not group_item:
-            names.append(item.name)
-    return names
-
-
-def _next_available_name(names_in_use, name=None):
-    i = 1
-    stem_name = "Group"
-    unique_name = f"{stem_name}_1" if name is None else name
-    name = stem_name if name is None else name
-
-    while unique_name in names_in_use:
-        unique_name = f"{name}_{i}"
-        i += 1
-
-    return unique_name
+    def updateEditorGeometry(self, editor, option, index):
+        editor.setGeometry(option.rect)
