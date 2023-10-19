@@ -222,20 +222,23 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def move_group_data(self, source_row, target_row):
         model = self._ui.groupTableView.model()
+        reference = None if target_row == -1 else self._groups[target_row].getName()
+        source = self._groups[source_row].getName()
         target_row = len(self._groups) - 1 if target_row == -1 else target_row
         model.layoutAboutToBeChanged.emit()
         self._groups.insert(target_row, self._groups.pop(source_row))
         # self._group_materials.insert(target_row, self._group_materials.pop(source_row))
         self._scene.update_graphics_materials(self._group_materials)
 
-        start_row = source_row
-        end_row = target_row
-        if target_row < source_row:
-            start_row = target_row
-            end_row = source_row
+        # start_row = source_row
+        # end_row = target_row
+        # if target_row < source_row:
+        #     start_row = target_row
+        #     end_row = source_row
 
-        names = [g.getName() for g in self._groups[start_row:end_row + 1]]
-        self._scene.change_graphics_order(names)
+
+        # names = [g.getName() for g in self._groups[start_row:end_row + 1]]
+        self._scene.change_graphics_order(source, reference)
         model.layoutChanged.emit()
 
     def _next_available_name(self, name=None):

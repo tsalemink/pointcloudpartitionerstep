@@ -20,7 +20,6 @@ class GroupTableView(QtWidgets.QTableView):
 
         source_index = self.selectedIndexes()[0].row()
         target_index = self.indexAt(event.pos()).row()
-        print("move from:", source_index, target_index)
 
         self.model().move_row(source_index, target_index)
         event.accept()

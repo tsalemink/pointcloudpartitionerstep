@@ -149,40 +149,16 @@ class PointCloudPartitionerScene(object):
         for (graphic, material) in zip(self._group_graphics, materials):
             graphic.setMaterial(material)
 
-    def change_graphics_order(self, names):
+    def change_graphics_order(self, source, reference):
         points_region = self._model.get_points_region()
         scene = points_region.getScene()
 
-        print(names)
-        # names.reverse()
-
-        def _list_scene_graphics():
-            g = scene.getFirstGraphics()
-            print("graphics listing:")
-            while g.isValid():
-                print(g.getName())
-                g = scene.getNextGraphics(g)
-
-        # print(names)
-        print("before:")
-        _list_scene_graphics()
-        index = len(names) - 1
-        graphic_ref = scene.findGraphicsByName(names[index])
         with ChangeManager(scene):
-            print("movement:")
-            while index > 0:
-                graphic = scene.findGraphicsByName(names[index - 1])
-                print("move:", graphic.getName(), "before:", graphic_ref.getName())
-                scene.moveGraphicsBefore(graphic, graphic_ref)
-                print("mid:")
-                _list_scene_graphics()
-                graphic_ref = graphic
-                index -= 1
-
-        print("after:")
-        _list_scene_graphics()
-        print()
-        print()
+            graphic = scene.findGraphicsByName(source)
+            graphic_ref = scene.findGraphicsByName(reference) if reference else scene.createGraphicsPoints()
+            scene.moveGraphicsBefore(graphic, graphic_ref)
+            if reference is None:
+                scene.removeGraphics(graphic_ref)
 
     def update_label_text(self, handler_label):
         attributes = self._label_graphics.getGraphicspointattributes()
