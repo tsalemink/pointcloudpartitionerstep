@@ -36,7 +36,7 @@ class GroupModel(QtCore.QAbstractTableModel):
             return QtCore.Qt.ItemFlag.ItemIsDropEnabled
 
         index_flags = QtCore.Qt.ItemFlag.ItemIsDragEnabled | QtCore.Qt.ItemFlag.ItemIsDropEnabled |super().flags(index)
-        if index.column() == 1:
+        if index.column() == 0:
             index_flags |= QtCore.Qt.ItemFlag.ItemIsEditable
 
         return index_flags
