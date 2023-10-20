@@ -588,34 +588,6 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         selection_field = scene_get_or_create_selection_group(scene)
         return selection_field.getMeshGroup(self._model.get_mesh())
 
-    def _get_selected_group_name(self):
-        row = self._selected_row()
-        if len(self._groups) == 0:
-            QtWidgets.QMessageBox.information(self, 'No Point Group Created', 'No point group created. Please create a point group first '
-                                              'before attempting to add points.', QtWidgets.QMessageBox.StandardButton.Ok)
-            return None
-        elif not row:
-            names = [g.getName() for g in self._groups]
-            dlg = GroupSelectionDialog(self, names)
-            if dlg.exec_():
-                return dlg.get_group_name()
-            else:
-                return None
-
-        return self._groups[row].getName()
-
-    def _get_selected_group(self):
-        group_name = self._get_selected_group_name()
-        if group_name:
-            return self._group_dict[group_name]
-        return None
-
-    def _get_checked_nodeset_group(self, checked_group):
-        if checked_group is None:
-            return None
-
-        return checked_group.getOrCreateNodesetGroup(self._model.get_data_points())
-
     def _update_label_text(self):
         handler_label_map = {SceneManipulation: "Mode: View", CustomSceneSelection: "Mode: Selection"}
         handler_label = handler_label_map[type(self._ui.widgetZinc.get_active_handler())]
