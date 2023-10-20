@@ -227,17 +227,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         target_row = len(self._groups) - 1 if target_row == -1 else target_row
         model.layoutAboutToBeChanged.emit()
         self._groups.insert(target_row, self._groups.pop(source_row))
-        # self._group_materials.insert(target_row, self._group_materials.pop(source_row))
         self._scene.update_graphics_materials(self._group_materials)
-
-        # start_row = source_row
-        # end_row = target_row
-        # if target_row < source_row:
-        #     start_row = target_row
-        #     end_row = source_row
-
-
-        # names = [g.getName() for g in self._groups[start_row:end_row + 1]]
         self._scene.change_graphics_order(source, reference)
         model.layoutChanged.emit()
 
