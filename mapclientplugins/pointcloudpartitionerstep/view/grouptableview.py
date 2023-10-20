@@ -1,10 +1,6 @@
 from PySide6 import QtCore, QtWidgets
 
 
-INVALID_STYLE_SHEET = 'background-color: rgba(239, 0, 0, 50)'
-DEFAULT_STYLE_SHEET = ''
-
-
 class GroupTableView(QtWidgets.QTableView):
 
     def __init__(self, parent):
@@ -80,6 +76,8 @@ class GroupModel(QtCore.QAbstractTableModel):
 
     def begin_remove_group(self, start_row, end_row=None):
         self.beginRemoveRows(QtCore.QModelIndex(), start_row, start_row if end_row is None else end_row)
+        for row in range(self.rowCount()):
+            self.parent().closePersistentEditor(self.index(row, 1))
 
     def end_remove_group(self):
         self.endRemoveRows()
