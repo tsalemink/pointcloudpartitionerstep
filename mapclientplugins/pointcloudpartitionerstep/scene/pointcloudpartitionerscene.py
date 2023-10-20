@@ -149,7 +149,12 @@ class PointCloudPartitionerScene(object):
         for (graphic, material) in zip(self._group_graphics, materials):
             graphic.setMaterial(material)
 
-    def change_graphics_order(self, source, reference):
+    def change_graphics_order(self, source_row, target_row):
+        group_target_row = len(self._group_graphics) - 1 if target_row == -1 else target_row
+        self._group_graphics.insert(group_target_row, self._group_graphics.pop(source_row))
+
+        reference = None if target_row == -1 else self._group_graphics[target_row].getName()
+        source = self._group_graphics[source_row].getName()
         points_region = self._model.get_points_region()
         scene = points_region.getScene()
 

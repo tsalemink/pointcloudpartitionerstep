@@ -221,14 +221,12 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
             self._groups[row].setName(value)
 
     def move_group_data(self, source_row, target_row):
+        group_target_row = len(self._groups) - 1 if target_row == -1 else target_row
         model = self._ui.groupTableView.model()
-        reference = None if target_row == -1 else self._groups[target_row].getName()
-        source = self._groups[source_row].getName()
-        target_row = len(self._groups) - 1 if target_row == -1 else target_row
         model.layoutAboutToBeChanged.emit()
-        self._groups.insert(target_row, self._groups.pop(source_row))
+        self._groups.insert(group_target_row, self._groups.pop(source_row))
         self._scene.update_graphics_materials(self._group_materials)
-        self._scene.change_graphics_order(source, reference)
+        self._scene.change_graphics_order(source_row, target_row)
         model.layoutChanged.emit()
 
     def _next_available_name(self, name=None):
@@ -334,7 +332,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _add_group_points_to_selection(self, row):
         selected_group = self._groups[row]
-        nodeset_group = self._get_checked_nodeset_group(selected_group)
+        nodeset_group = selected_group.getOrCreateNodesetGroup(self._model.get_data_points())
 
         selected_nodeset_group = self._get_node_selection_group()
         scene = self._field_module.getRegion().getScene()
@@ -591,20 +589,20 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         return selection_field.getMeshGroup(self._model.get_mesh())
 
     def _get_selected_group_name(self):
-        model = self._ui.groupTableView.model()
-
+        row = self._selected_row()
         if len(self._groups) == 0:
             QtWidgets.QMessageBox.information(self, 'No Point Group Created', 'No point group created. Please create a point group first '
                                               'before attempting to add points.', QtWidgets.QMessageBox.StandardButton.Ok)
             return None
-        elif not model.selected_group:
-            dlg = GroupSelectionDialog(self, self._groups)
+        elif not row:
+            names = [g.getName() for g in self._groups]
+            dlg = GroupSelectionDialog(self, names)
             if dlg.exec_():
                 return dlg.get_group_name()
             else:
                 return None
 
-        return model.selected_group.name
+        return self._groups[row].getName()
 
     def _get_selected_group(self):
         group_name = self._get_selected_group_name()
