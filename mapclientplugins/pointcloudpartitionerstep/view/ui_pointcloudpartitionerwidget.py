@@ -15,18 +15,19 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDoubleSpinBox,
-    QGridLayout, QGroupBox, QHBoxLayout, QLabel,
-    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
-    QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QAbstractScrollArea, QApplication, QCheckBox,
+    QComboBox, QDoubleSpinBox, QGridLayout, QGroupBox,
+    QHBoxLayout, QHeaderView, QLabel, QPushButton,
+    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
 
+from mapclientplugins.pointcloudpartitionerstep.view.grouptableview import GroupTableView
 from mapclientplugins.pointcloudpartitionerstep.view.zincpointcloudpartitionerwidget import ZincPointCloudPartitionerWidget
 
 class Ui_PointCloudPartitionerWidget(object):
     def setupUi(self, PointCloudPartitionerWidget):
         if not PointCloudPartitionerWidget.objectName():
             PointCloudPartitionerWidget.setObjectName(u"PointCloudPartitionerWidget")
-        PointCloudPartitionerWidget.resize(884, 730)
+        PointCloudPartitionerWidget.resize(884, 761)
         self.verticalLayout_10 = QVBoxLayout(PointCloudPartitionerWidget)
         self.verticalLayout_10.setObjectName(u"verticalLayout_10")
         self.groupBox = QGroupBox(PointCloudPartitionerWidget)
@@ -44,14 +45,26 @@ class Ui_PointCloudPartitionerWidget(object):
         self.groupBox_2.setSizePolicy(sizePolicy)
         self.verticalLayout_4 = QVBoxLayout(self.groupBox_2)
         self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.verticalLayout_5 = QVBoxLayout()
-        self.verticalLayout_5.setObjectName(u"verticalLayout_5")
+        self.groupTableView = GroupTableView(self.groupBox_2)
+        self.groupTableView.setObjectName(u"groupTableView")
+        self.groupTableView.setAcceptDrops(True)
+        self.groupTableView.setStyleSheet(u"QTableView { padding: 3px; }\n"
+"QTableView::item { padding: 3px; }")
+        self.groupTableView.setSizeAdjustPolicy(QAbstractScrollArea.AdjustIgnored)
+        self.groupTableView.setDragEnabled(True)
+        self.groupTableView.setDragDropMode(QAbstractItemView.InternalMove)
+        self.groupTableView.setDefaultDropAction(Qt.MoveAction)
+        self.groupTableView.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.groupTableView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.groupTableView.setShowGrid(False)
+        self.groupTableView.horizontalHeader().setVisible(False)
+        self.groupTableView.horizontalHeader().setMinimumSectionSize(20)
+        self.groupTableView.horizontalHeader().setDefaultSectionSize(80)
+        self.groupTableView.horizontalHeader().setHighlightSections(False)
+        self.groupTableView.verticalHeader().setVisible(False)
+        self.groupTableView.verticalHeader().setHighlightSections(False)
 
-        self.verticalLayout_4.addLayout(self.verticalLayout_5)
-
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        self.verticalLayout_4.addItem(self.verticalSpacer)
+        self.verticalLayout_4.addWidget(self.groupTableView)
 
         self.pushButtonCreateGroup = QPushButton(self.groupBox_2)
         self.pushButtonCreateGroup.setObjectName(u"pushButtonCreateGroup")
@@ -65,11 +78,13 @@ class Ui_PointCloudPartitionerWidget(object):
 
         self.pushButtonAddToGroup = QPushButton(self.groupBox_2)
         self.pushButtonAddToGroup.setObjectName(u"pushButtonAddToGroup")
+        self.pushButtonAddToGroup.setEnabled(False)
 
         self.verticalLayout_4.addWidget(self.pushButtonAddToGroup)
 
         self.pushButtonRemoveFromGroup = QPushButton(self.groupBox_2)
         self.pushButtonRemoveFromGroup.setObjectName(u"pushButtonRemoveFromGroup")
+        self.pushButtonRemoveFromGroup.setEnabled(False)
 
         self.verticalLayout_4.addWidget(self.pushButtonRemoveFromGroup)
 

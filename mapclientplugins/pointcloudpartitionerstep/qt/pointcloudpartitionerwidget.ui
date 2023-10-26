@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>884</width>
-    <height>730</height>
+    <height>761</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -35,20 +35,54 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_4">
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_5"/>
-           </item>
-           <item>
-            <spacer name="verticalSpacer">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
+            <widget class="GroupTableView" name="groupTableView">
+             <property name="acceptDrops">
+              <bool>true</bool>
              </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
+             <property name="styleSheet">
+              <string notr="true">QTableView { padding: 3px; }
+QTableView::item { padding: 3px; }</string>
              </property>
-            </spacer>
+             <property name="sizeAdjustPolicy">
+              <enum>QAbstractScrollArea::AdjustIgnored</enum>
+             </property>
+             <property name="dragEnabled">
+              <bool>true</bool>
+             </property>
+             <property name="dragDropMode">
+              <enum>QAbstractItemView::InternalMove</enum>
+             </property>
+             <property name="defaultDropAction">
+              <enum>Qt::MoveAction</enum>
+             </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::SingleSelection</enum>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+             <property name="showGrid">
+              <bool>false</bool>
+             </property>
+             <attribute name="horizontalHeaderVisible">
+              <bool>false</bool>
+             </attribute>
+             <attribute name="horizontalHeaderMinimumSectionSize">
+              <number>20</number>
+             </attribute>
+             <attribute name="horizontalHeaderDefaultSectionSize">
+              <number>80</number>
+             </attribute>
+             <attribute name="horizontalHeaderHighlightSections">
+              <bool>false</bool>
+             </attribute>
+             <attribute name="verticalHeaderVisible">
+              <bool>false</bool>
+             </attribute>
+             <attribute name="verticalHeaderHighlightSections">
+              <bool>false</bool>
+             </attribute>
+            </widget>
            </item>
            <item>
             <widget class="QPushButton" name="pushButtonCreateGroup">
@@ -66,6 +100,9 @@
            </item>
            <item>
             <widget class="QPushButton" name="pushButtonAddToGroup">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="text">
               <string>Add Selected Points to Group</string>
              </property>
@@ -73,6 +110,9 @@
            </item>
            <item>
             <widget class="QPushButton" name="pushButtonRemoveFromGroup">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="text">
               <string>Remove Selected Points from Group</string>
              </property>
@@ -337,6 +377,11 @@
    <extends>QWidget</extends>
    <header>mapclientplugins/pointcloudpartitionerstep/view/zincpointcloudpartitionerwidget.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>GroupTableView</class>
+   <extends>QTableView</extends>
+   <header>mapclientplugins/pointcloudpartitionerstep/view/grouptableview.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

@@ -63,14 +63,21 @@ subsets.
 Grouping Points
 ^^^^^^^^^^^^^^^
 
-To create a new point group click the `Create Group` button in the `Group Points` section. This will add a check box and a label to the
+To create a new point group click the `Create Group` button in the `Group Points` section. This will add a new label to the
 `Group Points` section of the GUI, as well as a `sel.` button to select all points already assigned to that group.
 The group name defined in the label can be changed at any time and will be used to identify the group when
-it is written to the output file. Each point group is automatically assigned a display color.
+it is written to the output file. Each point group is automatically assigned a display colour.
 
-Once you have selected the points you wish to group, simply select the check box for the desired point group in the `Group Points` section
+It is also possible to manually re-order the group list items in the `Group Points` section by dragging and dropping the items to the
+desired locations. Doing so will re-assign the display colour assigned to each of the groups. In the case where a set of points is contained
+by multiple point groups, the group closest to the top of the list will be displayed "in front" of any other groups containing those points.
+
+Once you have selected the points you wish to group, simply select the desired point group in the `Group Points` section
 and click `Add Selected Points to Group`. Points can be removed from a group again by selecting them and clicking
-`Remove Selected Points from Group`. If you wish to remove a point group entirely, select its check box and click `Remove Group`.
+`Remove Selected Points from Group`. If you wish to remove a point group entirely, select it and click `Remove Group`.
+
+Note that the buttons to add or remove points from a group will be disabled if there aren't any points selected. Similarly, the button to
+delete a point group will only be available if the user has selected a group from the list.
 
 .. _advanced-selection:
 
