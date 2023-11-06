@@ -35,8 +35,8 @@ requires = ['PySide6']  # Minimal requirements listing. Insert additional depend
 
 
 setup(
-    name='mapclientplugins.pointclouldpartitionerstep',
-    version=find_version('mapclientplugins', 'pointclouldpartitionerstep', '__init__.py'),
+    name='mapclientplugins.pointcloudpartitionerstep',
+    version=find_version('mapclientplugins', 'pointcloudpartitionerstep', '__init__.py'),
     description='',
     long_description='\n'.join(readme) + source_license,
     long_description_content_type='text/x-rst',
