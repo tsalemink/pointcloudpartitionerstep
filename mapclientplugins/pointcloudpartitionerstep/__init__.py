@@ -5,7 +5,7 @@ MAP Client Plugin
 __version__ = '0.2.0'
 __author__ = 'Timothy Salemink'
 __stepname__ = 'Point Cloud Partitioner'
-__location__ = ''
+__location__ = 'https://github.com/mapclient-plugins/mapclientplugins.pointcloudpartitionerstep'
 
 # import class that derives itself from the step mountpoint.
 from mapclientplugins.pointcloudpartitionerstep import step
