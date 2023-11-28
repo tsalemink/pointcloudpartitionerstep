@@ -597,7 +597,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._callback = done_execution
 
     def _zinc_widget_ready(self):
-        self._ui.widgetZinc.set_selectionfilter(self._model.get_selection_filter())
+        self._ui.widgetZinc.set_selection_filter(self._model.get_selection_filter())
 
     def _pixel_scale_changed(self, scale):
         self._scene.set_pixel_scale(scale)
