@@ -106,7 +106,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
         self._ui.checkBoxSurfacesVisibility.stateChanged.connect(self._scene.set_surfaces_visibility)
         self._ui.checkBoxPointsVisibility.stateChanged.connect(self._scene.set_points_visibility)
         self._ui.pointSizeSpinBox.valueChanged.connect(self._scene.set_point_size)
-        self._ui.widgetZinc.handler_updated.connect(self._update_label_text)
+        self._ui.widgetZinc.handler_activated.connect(self._update_label_text)
         self._ui.widgetZinc.selection_updated.connect(self._selection_updated)
         self._ui.groupTableView.itemDelegateForColumn(1).button_clicked.connect(self._add_group_points_to_selection)
 
@@ -590,7 +590,7 @@ class PointCloudPartitionerWidget(QtWidgets.QWidget):
 
     def _update_label_text(self):
         handler_label_map = {SceneManipulation: "Mode: View", CustomSceneSelection: "Mode: Selection"}
-        handler_label = handler_label_map[type(self._ui.widgetZinc.get_active_handler())]
+        handler_label = handler_label_map[type(self._ui.widgetZinc.active_handler())]
         self._scene.update_label_text(handler_label)
 
     def register_done_execution(self, done_execution):
